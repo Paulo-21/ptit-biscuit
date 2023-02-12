@@ -1,11 +1,21 @@
 use std::io;
 
+mod uci;
+use uci::*;
 fn main() {
     println!("P'TIT BISCUIT");
     loop {
-        print!(">");
+        //print!(">");
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
-        println!("{buffer}");
+        match buffer.trim() {
+            "uci" => {
+                uci();
+            },
+            _ => {
+                println!("info {buffer}");
+            }
+        }
+
     }
 }
