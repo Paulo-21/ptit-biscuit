@@ -2,6 +2,6 @@
 
 Features : 
 
-UCI support
-Alpha-beta prunning
-bitboard based
+UCI support<br>
+Alpha-beta prunning<br>
+bitboard based<br>
