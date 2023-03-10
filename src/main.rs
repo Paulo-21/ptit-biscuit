@@ -1,7 +1,7 @@
 use std::io;
 mod chess;
-use chess::*;
 mod uci;
+mod search;
 use uci::*;
 
 fn main() {

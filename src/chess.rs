@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use bitintr::{Tzcnt};//, Lzcnt, Andn};
 
-static basicstart_chess_board:[[char;8];8] = [
+static BASICSTART_CHESS_BOARD:[[char;8];8] = [
         ['r','n','b','q','k','b','n','r'],
         ['p','p','p','p','p','p','p','p'],
         [' ',' ',' ',' ',' ',' ',' ',' '],
@@ -28,7 +28,7 @@ pub enum Piece {
     QUEEN,
     KING
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Game {
     wp : u64, wn : u64, wb : u64, wr : u64, wq : u64, wk : u64,
     bp : u64, bn : u64, bb : u64, br : u64, bq : u64, bk : u64,
@@ -153,9 +153,9 @@ pub fn get_game_from_basicpos() -> Game {
     let mut bq : u64 = 0;
     let mut bk : u64 = 0;
 
-    array_to_bitboard(basicstart_chess_board, &mut wp, &mut wn, &mut wb, &mut wr, &mut wq, &mut wk, &mut bp, &mut bn, &mut bb, &mut br, &mut bq, &mut bk);
+    array_to_bitboard(BASICSTART_CHESS_BOARD, &mut wp, &mut wn, &mut wb, &mut wr, &mut wq, &mut wk, &mut bp, &mut bn, &mut bb, &mut br, &mut bq, &mut bk);
     
-    let mut game = Game {
+    let game = Game {
         wp, wn, wb, wr, wq, wk,
         bp, bn, bb, br, bq, bk,
         wking_never_move : true, wqueen_rook_never_move : true, wking_rook_never_move : true,
@@ -174,7 +174,7 @@ pub fn _draw_bitboard(bitboard : u64) {
     }
     println!();
 }
-pub fn count_bit(mut bit : u64) -> i8 {
+pub fn _count_bit(mut bit : u64) -> i8 {
     let mut count = 0;
     while bit != 0 {
         bit &= bit-1;
