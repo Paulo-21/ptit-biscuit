@@ -1,4 +1,5 @@
 use std::{io, cmp::Ordering};
+use crate::chess::*;
 
 pub fn uci () {
     println!("uciok");
@@ -6,7 +7,7 @@ pub fn uci () {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
         let mut response = String::new();
-        let mut command = buffer.trim();
+        let command = buffer.trim();
 
         if command == "uci"  {
             input_uci();
@@ -19,7 +20,7 @@ pub fn uci () {
             input_position(&command[ 9..]);
         }
         else if command.len() >= 2 && command[..2].cmp("go") == Ordering::Equal {
-            compute();
+            //compute();
             println!("bestmove e7e5");
         }
         else if command == "stop" {
@@ -47,27 +48,22 @@ fn input_position(mut commande : &str) {
         get_bitboard_from_fen(commande);
     }
 }
-fn compute() {
-    
-}
-fn get_bitboard_from_startpos(command : &str)  { // -> Game {
+fn get_bitboard_from_startpos(command : &str) -> Game {
     let move_tab = command.split_ascii_whitespace();
-    let init_board = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let mut game = get_game_from_basicpos();
     let white_to_play = true;
     for one_move in move_tab {
-        /*let (a,b) = convert_move();
+        let (a,b) = convert_move_to_bitboard(one_move);
         if white_to_play {
-            compute_w();
+            compute_move_w(a, b, &mut game);
         }
         else {
-            compute_b();
+            compute_move_b(a, b, &mut game);
         }
-        return final_bitboard;
-        */
-
         println!("{one_move}");
     }
+    game
 }   
-fn get_bitboard_from_fen(command : &str) {
+fn get_bitboard_from_fen(_command : &str) {
 
 }

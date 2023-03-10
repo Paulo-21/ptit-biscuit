@@ -1,7 +1,9 @@
 use std::io;
-
+mod chess;
+use chess::*;
 mod uci;
 use uci::*;
+
 fn main() {
     println!("P'TIT BISCUIT");
     loop {
