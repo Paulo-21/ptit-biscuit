@@ -5,7 +5,7 @@ pub fn alpha_beta(game : &Game, depth : i8, mut alpha:i16, mut beta : i16, maxim
     if depth == 0 || legal_move.is_empty() {
         return eval(game);
     };
-    let mut value = 0;
+    let mut value;
     if maximizingPlayer {
         value = i16::MIN;
         for moveto in legal_move {
@@ -24,7 +24,7 @@ pub fn alpha_beta(game : &Game, depth : i8, mut alpha:i16, mut beta : i16, maxim
     }
     else {
         value = i16::MAX;
-        for moveto in legal_move {
+        for _moveto in legal_move {
             value = min(value, alpha_beta(game, depth-1, alpha, beta, maximizingPlayer^true, w_play^true));
             if value < alpha {
                 break;
@@ -35,28 +35,28 @@ pub fn alpha_beta(game : &Game, depth : i8, mut alpha:i16, mut beta : i16, maxim
     return value;
 }
 
-pub fn minimax(game: &Game, depth : i8, maximizingPlayer : bool) -> i16 {
+pub fn minimax(game: &Game, depth : i8, maximizing_player : bool) -> i16 {
     if depth == 0 {
         return eval(&game);
     };
-    let mut value = 0;
-    if maximizingPlayer {
+    let mut value;
+    if maximizing_player {
         value = i16::MIN;
-        let legal_moves = get_legal_move(maximizingPlayer, game);
-        for moveto in legal_moves {
-            value = max(value, minimax(game, depth-1, maximizingPlayer^true));
+        let legal_moves = get_legal_move(maximizing_player, game);
+        for _moveto in legal_moves {
+            value = max(value, minimax(game, depth-1, maximizing_player^true));
         }
     }
     else {
         value = i16::MAX;
-        let legal_moves = get_legal_move(maximizingPlayer, game);
-        for moveto in legal_moves {
-            value = min(value, minimax(game, depth-1, maximizingPlayer^true));
+        let legal_moves = get_legal_move(maximizing_player, game);
+        for _moveto in legal_moves {
+            value = min(value, minimax(game, depth-1, maximizing_player^true));
         }
     }
     return value;
 }
 
 fn eval(game : &Game ) -> i16 {
-    2
+    3
 }
