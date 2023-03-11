@@ -3,8 +3,9 @@ mod chess;
 mod uci;
 mod search;
 use uci::*;
-
+use std::env;
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
     println!("P'TIT BISCUIT");
     loop {
         //print!(">");

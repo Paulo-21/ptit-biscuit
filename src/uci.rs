@@ -1,6 +1,8 @@
-use std::{io, cmp::Ordering};
+use std::{io, cmp::{Ordering, max, min}};
 use crate::chess::*;
 use crate::search::*;
+
+
 pub fn uci () {
     println!("uciok");
     let mut game = Game::default();
@@ -21,21 +23,42 @@ pub fn uci () {
             game = input_position(&command[ 9..]);
         }
         else if command.len() >= 2 && command[..2].cmp("go") == Ordering::Equal {
-            //compute();
-
-            let move_to_play = compute(&game, true);
-            println!("{:?}", move_to_play);
+            let (a, b) = compute(&game);
+            let bestmovea = convert_square_to_move(a);
+            let bestmoveb = convert_square_to_move(b);
+            println!("bestmove {}{}", bestmovea, bestmoveb);
         }
         else if command == "stop" {
             response.push_str("bestmove e2e4");
         }
     }
 }
-fn compute(game : &Game, _w_to_play : bool) -> (u64, u64) {
+fn compute(game : &Game) -> (u64, u64) {
     let depth = 3;
     let maximizing_player = true;
-    minimax(game, depth, maximizing_player);
-    (2, 3)
+    //draw_board(game);
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    println!("info : {:?}", legal_moves);
+    let mut score = i16::MIN;
+    let mut bestmove = 0u64;
+    for moveto in legal_moves {
+        let mut game1 = game.clone();
+        game1.white_to_play ^= true;
+        let a = moveto.0>>8;
+        let b = moveto.0 & 255;
+        if game.white_to_play { compute_move_w(a, b, &mut game1); }
+        else { compute_move_b(a, b, &mut game1); }
+        let move_score = minimax(&mut game1, depth, maximizing_player);
+        eprint!("{}{} : {}", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        if move_score > score {
+            score = move_score;
+            bestmove = moveto.0;
+        }
+    }
+    eprintln!();
+    let a = bestmove >> 8;
+    let b = bestmove & 255;
+    (a, b)
 }
 fn input_uci() {
     println!("id name Ptit Biscuit\n");
@@ -47,7 +70,7 @@ fn input_ready() {
 }
 fn input_position(mut commande : &str) -> Game {
     let game = if commande.contains("startpos") {
-        commande = &commande[9..];
+        commande = &commande[15..];
         get_bitboard_from_startpos(commande)
     }
     else {// if commande.contains("fen") {
@@ -60,16 +83,16 @@ fn input_position(mut commande : &str) -> Game {
 fn get_bitboard_from_startpos(command : &str) -> Game {
     let move_tab = command.split_ascii_whitespace();
     let mut game = get_game_from_basicpos();
-    let white_to_play = true;
     for one_move in move_tab {
         let (a,b) = convert_move_to_bitboard(one_move);
-        if white_to_play {
+        if game.white_to_play {
             compute_move_w(a, b, &mut game);
         }
         else {
             compute_move_b(a, b, &mut game);
         }
-        println!("{one_move}");
+        game.white_to_play ^= true;
+        //println!("{one_move}");
     }
     game
 }

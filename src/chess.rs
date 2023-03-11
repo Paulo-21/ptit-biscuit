@@ -1,3 +1,5 @@
+use std::default;
+
 //use std::{io};
 use lazy_static::lazy_static;
 use bitintr::{ Tzcnt };//, Lzcnt, Andn};
@@ -22,10 +24,11 @@ pub enum Piece {
     QUEEN,
     KING
 }
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct Game {
-    wp : u64, wn : u64, wb : u64, wr : u64, wq : u64, wk : u64,
-    bp : u64, bn : u64, bb : u64, br : u64, bq : u64, bk : u64,
+    pub wp : u64, pub wn : u64, pub wb : u64, pub wr : u64, pub wq : u64, pub wk : u64,
+    pub bp : u64, pub bn : u64, pub bb : u64, pub br : u64, pub bq : u64, pub bk : u64,
+    pub white_to_play : bool,
     wking_rook_never_move : bool,
     wqueen_rook_never_move : bool,
     wking_never_move : bool,
@@ -42,6 +45,12 @@ impl Game {
     }
     pub fn black(&self) -> u64 {
         self.bp | self.bn | self.bb | self.br | self.bq | self.bk
+    }
+    
+}
+impl Default for Game {
+    fn default() -> Self { 
+        get_game_from_basicpos()
     }
 }
 
@@ -152,6 +161,7 @@ pub fn get_game_from_basicpos() -> Game {
     Game {
         wp, wn, wb, wr, wq, wk,
         bp, bn, bb, br, bq, bk,
+        white_to_play : true,
         wking_never_move : true, wqueen_rook_never_move : true, wking_rook_never_move : true,
         bking_never_move : true, bqueen_rook_never_move : true, bking_rook_never_move : true,
     }
@@ -293,9 +303,7 @@ pub fn rank_attacks(occupied: u64, sq: u64) -> u64 {
     FIRST_RANK_ATTACKS[o as usize][f as usize] << r
 }
 pub fn convert_move_to_bitboard(moves : &str) -> (u64, u64) {
-    /*if moves.len() != 4 {
-        return;
-    }*/
+    
     let mut iter1 = moves[0..4].chars();
     let un = iter1.next().unwrap() as u64-96;
     let deux = iter1.next().unwrap() as u64-48;
@@ -341,7 +349,7 @@ pub fn compute_move_w(mut a:u64, mut b:u64, game : &mut Game) -> bool {
         from = &mut game.wq;
     }
     else if game.wk & a != 0 {
-        println!("{square_b} {} {} {}", game.wking_never_move, game.wking_rook_never_move, game.wqueen_rook_never_move);
+        //println!("{square_b} {} {} {}", game.wking_never_move, game.wking_rook_never_move, game.wqueen_rook_never_move);
         if square_b == 2 { // Grand roque
             //check if the king and the rook has never move
             if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(1) + 2u64.pow(2)) == 0 && possibility_b(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
@@ -434,11 +442,11 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> bool {
         from = &mut game.bq;
     }
     else if game.bk & a != 0 {
-        println!("{square_b} {} {} {}", game.bking_never_move, game.bking_rook_never_move, game.bqueen_rook_never_move);
+        //println!("{square_b} {} {} {}", game.bking_never_move, game.bking_rook_never_move, game.bqueen_rook_never_move);
         if square_b == 58 { // Grand roque
             //check if the king and the rook has never move
             if game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
-                println!("Grand roque");
+                //println!("Grand roque");
                 game.bking_never_move = false;
                 game.bking_rook_never_move = false;
                 //Do grand roque
@@ -640,7 +648,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         //Queen
         if game.wq != 0 {
             let piece = game.wq.tzcnt();
-            let mut wq_possi = hv_moves(piece, occupied) | diag_antid_moves(piece, occupied);
+            let mut wq_possi = (hv_moves(piece, occupied) | diag_antid_moves(piece, occupied)) & !white;
             while wq_possi != 0 {
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = game.clone();
@@ -654,7 +662,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
             }
         }
         //King
-        let mut possi_wk = possibility_k(game.wk) & !black;
+        let mut possi_wk = possibility_k(game.wk) & !white;
         while possi_wk != 0 {
             //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
             let mut game1 = game.clone();
@@ -734,7 +742,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         //Queen
         if game.bq != 0 {
             let piece = game.bq.tzcnt();
-            let mut bq_possi = hv_moves(piece, occupied) | diag_antid_moves(piece, occupied);
+            let mut bq_possi = (hv_moves(piece, occupied) | diag_antid_moves(piece, occupied)) & !black;
             while bq_possi != 0 {
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = game.clone();
@@ -768,6 +776,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
 pub fn print_custum_move(a_move : (u64,Piece)) {
     let a = a_move.0>>8;
     let b = a_move.0 & 255;
-    //println!("{a} {b}");
     println!("{}{} {:?}", convert_square_to_move(a), convert_square_to_move(b), a_move.1);
+}
+pub fn convert_custum_move(the_move : (u64, Piece)) -> (u64, u64) {
+    (the_move.0>>8, the_move.0 & 255)
 }
