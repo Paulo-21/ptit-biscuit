@@ -49,7 +49,7 @@ fn compute(game : &Game) -> (u64, u64) {
         if game.white_to_play { compute_move_w(a, b, &mut game1); }
         else { compute_move_b(a, b, &mut game1); }
         let move_score = minimax(&mut game1, depth, maximizing_player);
-        eprint!("{}{} : {}", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
         if move_score > score {
             score = move_score;
             bestmove = moveto.0;
