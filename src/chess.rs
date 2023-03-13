@@ -3,6 +3,7 @@ use std::default;
 //use std::{io};
 use lazy_static::lazy_static;
 use bitintr::{ Tzcnt };//, Lzcnt, Andn};
+
 static BASICSTART_CHESS_BOARD:[[char;8];8] = [
         ['r','n','b','q','k','b','n','r'],
         ['p','p','p','p','p','p','p','p'],
@@ -226,21 +227,19 @@ pub fn convert_string_to_bitboard(binary:usize) -> u64 {
     //u64::pow(2, (binary) as u32)
     1<<binary
 }
-/*pub fn possibility_wp(wp:&mut u64, wn:&mut u64, wb:&mut u64, wr:&mut u64, wq:&mut u64, wk:&mut u64, bp:&mut u64, bn:&mut u64, bb:&mut u64, br:&mut u64, bq:&mut u64, bk:&mut u64) -> u64 {
-    let black = *bp | *bn | *bb | *br | *bq | *bk;
-    let white = *wp | *wn | *wb | *wr | *wq | *wk;
-    let empty = !(black | white);
-    let pmoves1 = *wp<<7 & black & !RANK_MASK[7] & !FILE_MASKS[0];
-    let pmoves2 = *wp<<9 & black & !RANK_MASK[7] & !FILE_MASKS[7];
-    let pmoves3 = *wp<<8 & empty & !RANK_MASK[7];
-    let pmoves4 = *wp<<16 & empty & (empty<<8) & RANK_MASK[3];
-    pmoves1 | pmoves2 | pmoves3 | pmoves4
-}*/
 pub fn possibility_wp(wpawn : u64, empty : u64, black : u64) -> u64 {
-    let pmoves1 = wpawn<<7 & black & !RANK_MASK[7] & !FILE_MASKS[0];
-    let pmoves2 = wpawn<<9 & black & !RANK_MASK[7] & !FILE_MASKS[7];
+    let pmoves1 = (wpawn & !FILE_MASKS[0])<<7 & black & !RANK_MASK[7] ;
+    let pmoves2 = (wpawn & !FILE_MASKS[7])<<9 & black & !RANK_MASK[7] ;
     let pmoves3 = wpawn<<8 & empty & !RANK_MASK[7];
     let pmoves4 = wpawn<<16 & empty & (empty<<8) & RANK_MASK[3];
+    pmoves1 | pmoves2 | pmoves3 | pmoves4
+}
+pub fn possibility_bp2( bpawn: u64, empty : u64, white : u64) -> u64 {
+
+    let pmoves1 = (bpawn & !FILE_MASKS[7])>>7 & white & !RANK_MASK[0] ;
+    let pmoves2 = (bpawn & !FILE_MASKS[0])>>9 & white & !RANK_MASK[0] ;
+    let pmoves3 = bpawn>>8 & empty & !RANK_MASK[0];
+    let pmoves4 = bpawn>>16 & empty & (empty>>8) & RANK_MASK[4];
     pmoves1 | pmoves2 | pmoves3 | pmoves4
 }
 pub fn attack_wp(wpawn : u64, black : u64) -> u64 {
@@ -253,45 +252,31 @@ pub fn attack_bp(wpawn : u64, white : u64) -> u64 {
     let pmoves2 = wpawn>>9 & white & !RANK_MASK[7] & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
-/*pub fn _possibility_bp(wp:&mut u64, wn:&mut u64, wb:&mut u64, wr:&mut u64, wq:&mut u64, wk:&mut u64, bp:&mut u64, bn:&mut u64, bb:&mut u64, br:&mut u64, bq:&mut u64, bk:&mut u64) -> u64 {
-    let black = *bp | *bn | *bb | *br | *bq | *bk;
-    let white = *wp | *wn | *wb | *wr | *wq | *wk;
-    let empty = !(black | white);
-
-    let pmoves1 = *bp>>7 & white & !RANK_MASK[0] & !FILE_MASKS[7];
-    let pmoves2 = *bp>>9 & white & !RANK_MASK[0] & !FILE_MASKS[0];
-    let pmoves3 = *bp>>8 & empty & !RANK_MASK[0];
-    let pmoves4 = *bp>>16 & empty & (empty>>8) & RANK_MASK[4];
-    pmoves1 | pmoves2 | pmoves3 | pmoves4
-}*/
-pub fn possibility_bp2( bpawn: u64, empty : u64, white : u64) -> u64 {
-
-    let pmoves1 = bpawn>>7 & white & !RANK_MASK[0] & !FILE_MASKS[7];
-    let pmoves2 = bpawn>>9 & white & !RANK_MASK[0] & !FILE_MASKS[0];
-    let pmoves3 = bpawn>>8 & empty & !RANK_MASK[0];
-    let pmoves4 = bpawn>>16 & empty & (empty>>8) & RANK_MASK[4];
-    pmoves1 | pmoves2 | pmoves3 | pmoves4
-}
-
 pub fn possibility_n(knight : u64) -> u64 {
-    let nonoea:u64 =  (knight << 17) & !FILE_A ;
-    let noeaea:u64 =  (knight << 10) & !FILE_AB;
-    let soeaea:u64 =  (knight >>  6) & !FILE_AB;
-    let sosoea:u64 =  (knight >> 15) & !FILE_A ;
-    let nonowe:u64 =  (knight << 15) & !FILE_H ;
-    let nowewe:u64 =  (knight <<  6) & !FILE_GH;
-    let sowewe:u64 =  (knight >> 10) & !FILE_GH;
-    let sosowe:u64 =  (knight >> 17) & !FILE_H ;
+    let nonoea:u64 =  (knight << 17) & !FILE_MASKS[0];
+    let noeaea:u64 =  (knight << 10) & !(FILE_MASKS[0] |  FILE_MASKS[1]);
+    let soeaea:u64 =  (knight >>  6) & !(FILE_MASKS[0] | FILE_MASKS[1]);
+    let sosoea:u64 =  (knight >> 15) & !FILE_MASKS[0];
+    let nonowe:u64 =  (knight << 15) & !FILE_MASKS[7];
+    let nowewe:u64 =  (knight <<  6) & !(FILE_MASKS[6] | FILE_MASKS[7]);
+    let sowewe:u64 =  (knight >> 10) & !(FILE_MASKS[6] | FILE_MASKS[7]);
+    let sosowe:u64 =  (knight >> 17) & !FILE_MASKS[7];
     nonoea | noeaea | soeaea | sosoea | nonowe | nowewe | sowewe | sosowe
 }
-
+/*
 pub fn possibility_k(mut wk : u64) -> u64 {
     let mut attack = wk<<1 | wk>>1;
     wk |= attack;
     attack |= wk<<8 | wk>>8;
     attack
+}*/
+pub fn possibility_k(wk : u64) -> u64 {
+    let mut attack = (wk & !FILE_MASKS[7])<<1 | (wk & !FILE_MASKS[0])>>1;
+    attack |= (wk & !FILE_MASKS[7])<<9 | (wk & !FILE_MASKS[7])>>7;
+    attack |= (wk & !FILE_MASKS[0])>>9 | (wk & !FILE_MASKS[0])<<7;
+    attack |= wk<<8 | wk>>8;
+    attack
 }
-
 pub fn hyperbola_quintessence(occupied : u64, mask: u64, mut number : u64) -> u64 {
     number = 1<<number;
     let mut forward = occupied & mask ;
@@ -305,7 +290,6 @@ pub fn hyperbola_quintessence(occupied : u64, mask: u64, mut number : u64) -> u6
     //(occupied - 2 * number) ^ (occupied.reverse_bits() - 2 * number.reverse_bits()).reverse_bits()
 }
 pub fn rank_attacks(occupied: u64, sq: u64) -> u64 {
-    
     let f = sq & 7; // sq.file() as Bitboard;
     let r = sq & !7; // (sq.rank() * 8) as Bitboard;
     let o = (occupied >> (r + 1)) & 63;
@@ -344,17 +328,20 @@ pub fn compute_move_w(mut a:u64, mut b:u64, game : &mut Game) -> bool {
     }
     else if game.wb & a != 0 {
         let occupied = black | white;
-        moves = diag_antid_moves(square_a, occupied);
+        moves = diag_antid_moves(square_a, occupied) & !white;
         from = &mut game.wb;
     }
     else if game.wr & a != 0 {
         let occupied = black | white;
-        moves = hv_moves(square_a, occupied);
+        moves = hv_moves(square_a, occupied) & !white;
         from = &mut game.wr;
+        if moves & b != 0 {
+            game.wking_rook_never_move = false;
+        }
     }
     else if game.wq & a != 0 {
         let occupied = black | white;
-        moves = hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied);
+        moves = (hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied)) & !white;
         from = &mut game.wq;
     }
     else if game.wk & a != 0 {
@@ -389,6 +376,9 @@ pub fn compute_move_w(mut a:u64, mut b:u64, game : &mut Game) -> bool {
         }
         moves = possibility_k(game.wk) & !white;
         from = &mut game.wk;
+        if moves & b != 0 {
+            game.wking_never_move = false;
+        }
     }
     if moves & b != 0 {
         (*from) &= !a;
@@ -445,15 +435,13 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> bool {
     }
     else if game.bq & a != 0 {
         let occupied = black | white;
-        moves = hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied);
+        moves = (hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied)) & !black;
         from = &mut game.bq;
     }
     else if game.bk & a != 0 {
         //println!("{square_b} {} {} {}", game.bking_never_move, (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0, possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0);
         
-        if square_b == 58 { // Grand roque
-            //check if the king and the rook has never move
-            if game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
+        if square_b == 58 && game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
                 //println!("Grand roque");
                 game.bking_never_move = false;
                 game.bking_rook_never_move = false;
@@ -463,13 +451,11 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> bool {
                 game.br &= !(2u64.pow(56));
                 game.br |= 2u64.pow(59);
                 return true;
-            }
-            return false;
+        }
             //check if no piece is between
             //check if square between isn't attacked
-        }
-        else if square_b == 62 { //Petit Roque
-            if game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+        
+        else if square_b == 62  && game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
                 game.bking_never_move = false;
                 game.bqueen_rook_never_move = false;
                 game.bk &= !a;
@@ -477,11 +463,13 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> bool {
                 game.br &= !(2u64.pow(63));
                 game.br |= 2u64.pow(61);
                 return true;
-            }
-            return false;
+            
         }
         moves = possibility_k(game.bk) & !black;
         from = &mut game.bk;
+        if moves & b != 0 {
+            game.bking_never_move = false;
+        }
     }
     if moves & b != 0 {
         (*from) &= !a;
@@ -556,7 +544,6 @@ pub fn possibility_b( game : &Game) -> u64 {
         }
     }
     
-    //attack |= possibility_bn(wp, wn, wb, wr, wq, wk, bp, bn, bb, br, bq, bk);
     if game.br != 0 {
         let devant = 63-(game.br).leading_zeros();
         let arriere = (game.br).trailing_zeros();
@@ -615,7 +602,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         let mut wn_test = game.wn;
         while wn_test != 0 {
             let piece = wn_test.tzcnt();
-            let wn_extract = (1 << piece) as u64;
+            let wn_extract = 1u64 << piece;
             wn_test = wn_test & (wn_test - 1);
             let mut wn_possi = possibility_n( wn_extract) & !white;
             while wn_possi != 0 {
@@ -722,7 +709,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         let mut bn_test = game.bn;
         while bn_test != 0 {
             let piece = bn_test.trailing_zeros() as u64;
-            let bn_extract = (1u64) << piece;
+            let bn_extract = 1u64 << piece;
             bn_test = bn_test & (bn_test-1);
             let mut bn_possi = possibility_n(bn_extract) & !black;
             while bn_possi != 0 {

@@ -37,6 +37,7 @@ fn compute(game : &Game) -> (u64, u64) {
     let depth = 3;
     let maximizing_player = true;
     //draw_board(game);
+    //draw_game(game);
     let legal_moves = get_legal_move(game.white_to_play, game);
     println!("info : {:?}", legal_moves);
     let mut score = i16::MIN;
@@ -71,7 +72,10 @@ fn input_ready() {
 fn input_position(mut commande : &str) -> Game {
     let game = if commande.contains("startpos") {
         commande = &commande[15..];
-        get_bitboard_from_startpos(commande)
+        if commande.len() > 0 {
+            return get_bitboard_from_startpos(commande)
+        }
+        Game::default()
     }
     else {// if commande.contains("fen") {
         commande = &commande[3..];
