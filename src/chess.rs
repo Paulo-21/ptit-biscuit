@@ -1,4 +1,3 @@
-use std::default;
 
 //use std::{io};
 use lazy_static::lazy_static;
@@ -62,12 +61,6 @@ pub fn convert_square_to_move(a_move : u64) -> String{
     a.push((48 + b+1 ) as char );
     a
 }
-static FILE_A:u64 = 72340172838076673;
-static FILE_B:u64 = 144680345676153340;
-static FILE_H:u64 = 9259542123273814000;
-static FILE_G:u64 = 4629771061636907000;
-static FILE_AB:u64 = FILE_A | FILE_B;
-static FILE_GH:u64 = FILE_G | FILE_H;
 
 static RANK_MASK : [u64;8] = [
     255, 65280, 16711680, 4278190080, 1095216660480, 280375465082880, 71776119061217280, 18374686479671624000
@@ -185,8 +178,7 @@ pub fn _count_bit(mut bit : u64) -> i8 {
     }
     count
 }
-#[allow(clippy::too_many_arguments)]
-pub fn draw_board(game : &Game) {
+pub fn _draw_board(game : &Game) {
     let mut chess_board:[[char;8];8] = [[' ';8];8];
     let mut i = 0;
     for x in &mut chess_board {

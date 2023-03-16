@@ -34,24 +34,28 @@ pub fn uci () {
     }
 }
 fn compute(game : &Game) -> (u64, u64) {
+    println!("START Compute");
+    let mut nb_node = 0u64;
     let depth = 3;
-    let maximizing_player = true;
-    //draw_board(game);
-    //draw_game(game);
     let legal_moves = get_legal_move(game.white_to_play, game);
     println!("info : {:?}", legal_moves);
-    let mut score = i16::MIN;
+    let mut score = i16::MAX;
     let mut bestmove = 0u64;
+    if !legal_moves.is_empty() {
+        bestmove = legal_moves.get(0).unwrap().0;
+    }
     for moveto in legal_moves {
-        let mut game1 = game.clone();
-        game1.white_to_play ^= true;
+        let mut game1 = *game;
         let a = moveto.0>>8;
         let b = moveto.0 & 255;
         if game.white_to_play { compute_move_w(a, b, &mut game1); }
         else { compute_move_b(a, b, &mut game1); }
-        let move_score = minimax(&mut game1, depth, maximizing_player);
+        game1.white_to_play ^= true;
+        let move_score = minimax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
+        //let move_score = negamax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
         eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
-        if move_score > score {
+        
+        if move_score < score {
             score = move_score;
             bestmove = moveto.0;
         }
@@ -59,6 +63,7 @@ fn compute(game : &Game) -> (u64, u64) {
     eprintln!();
     let a = bestmove >> 8;
     let b = bestmove & 255;
+    println!("NB nodes : {nb_node}");
     (a, b)
 }
 fn input_uci() {
@@ -72,7 +77,7 @@ fn input_ready() {
 fn input_position(mut commande : &str) -> Game {
     let game = if commande.contains("startpos") {
         commande = &commande[15..];
-        if commande.len() > 0 {
+        if !commande.is_empty() {
             return get_bitboard_from_startpos(commande)
         }
         Game::default()
