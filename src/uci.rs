@@ -82,7 +82,7 @@ fn compute_negamax(game : &Game) -> (u64 , u64) {
     let depth = 3;
     let legal_moves = get_legal_move(game.white_to_play, game);
     println!("info : {:?}", legal_moves);
-    let mut score = i16::MIN;
+    let mut score = i32::MIN;
     let mut bestmove = 0u64;
     if !legal_moves.is_empty() {
         bestmove = legal_moves.get(0).unwrap().0;
@@ -94,7 +94,7 @@ fn compute_negamax(game : &Game) -> (u64 , u64) {
         if game.white_to_play { compute_move_w(a, b, &mut game1); }
         else { compute_move_b(a, b, &mut game1); }
         game1.white_to_play ^= true;
-        //let move_score = minimax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
+
         let move_score = (-1)*negamax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
         eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
         
@@ -116,7 +116,7 @@ fn compute_minimax(game : &Game) -> (u64 , u64) {
     let maximizing_player = game.white_to_play;
     let legal_moves = get_legal_move(game.white_to_play, game);
     println!("info : {:?}", legal_moves);
-    let mut score = if maximizing_player { i16::MAX } else { i16::MIN };
+    let mut score = if maximizing_player { i32::MAX } else { i32::MIN };
     let mut bestmove = 0u64;
     if !legal_moves.is_empty() {
         bestmove = legal_moves.get(0).unwrap().0;

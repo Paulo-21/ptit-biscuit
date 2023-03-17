@@ -521,7 +521,7 @@ pub fn possibility_b( game : &Game) -> u64 {
     let occupied = black | white;
     let mut attack = 0;
 
-    attack |= attack_bp(game.wp, black);
+    attack |= attack_bp(game.bp, black);
 
     if game.bn != 0 {
         attack |= possibility_n(game.bn) & !black;
@@ -668,10 +668,10 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         while possi_wk != 0 {
             let mut game1 = *game;
             let b = possi_wk.tzcnt();
-            compute_move_w((game.wk).trailing_zeros() as u64, b, &mut game1);
+            compute_move_w((game.wk).tzcnt() as u64, b, &mut game1);
             let is_check = is_attacked(true, &game1);
             if !is_check {
-                legal_moves.push((((game.wk.trailing_zeros() as u64)<<8) + b, Piece::KING));
+                legal_moves.push((((game.wk.tzcnt() as u64)<<8) + b, Piece::KING));
             }
             possi_wk = possi_wk & (possi_wk - 1);
         }
@@ -680,13 +680,13 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         //Pions Possibility
         let mut bp_test = game.bp;
         while  bp_test != 0 {
-            let piece = bp_test.trailing_zeros() as u64;
+            let piece = bp_test.tzcnt() as u64;
             let bp_extract = 1u64 << piece;
             bp_test = bp_test & (bp_test-1);
             let mut possi_bp = possibility_bp2(bp_extract, !(occupied), white);
             while possi_bp != 0 {
                 let mut game1 = *game;
-                let b = possi_bp.trailing_zeros() as u64;
+                let b = possi_bp.tzcnt() as u64;
                 compute_move_b(piece, b, &mut game1);
                 let is_check = is_attacked(false, &game1);
                 if !is_check {
@@ -699,14 +699,14 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
         let mut bn_test = game.bn;
         while bn_test != 0 {
-            let piece = bn_test.trailing_zeros() as u64;
+            let piece = bn_test.tzcnt() as u64;
             let bn_extract = 1u64 << piece;
             bn_test = bn_test & (bn_test-1);
             let mut bn_possi = possibility_n(bn_extract) & !black;
             while bn_possi != 0 {
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
-                let b = bn_possi.trailing_zeros() as u64;
+                let b = bn_possi.tzcnt() as u64;
                 compute_move_b(piece, b, &mut game1);
                 let is_check = is_attacked(false, &game1);
                 if !is_check {
@@ -776,10 +776,10 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
             //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
             let mut game1 = *game;
             let b = possi_bk.tzcnt();
-            compute_move_b(game.bk.trailing_zeros() as u64, b, &mut game1);
+            compute_move_b(game.bk.tzcnt() as u64, b, &mut game1);
             let is_check = is_attacked(false, &game1);
             if !is_check {
-                legal_moves.push((((game.bk.trailing_zeros() as u64)<<8) + b, Piece::KING));
+                legal_moves.push((((game.bk.tzcnt() as u64)<<8) + b, Piece::KING));
             }
             possi_bk = possi_bk & (possi_bk - 1);
         }

@@ -2,14 +2,14 @@ use crate::chess::*;
 use std::cmp::{ max, min };
 //use bitintr::Popcnt;
 
-pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i16, mut beta : i16, maximizing_player : bool) -> i16 {
+pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, maximizing_player : bool) -> i32 {
     let legal_move = get_legal_move(maximizing_player, game);
     if depth == 0 {
         return eval(game, legal_move.len() as i32);
     };
     let mut value;
     if maximizing_player {
-        value = i16::MIN;
+        value = i32::MIN;
         for moveto in legal_move {
             let a = moveto.0 >> 8;
             let b = moveto.0 & 255;
@@ -25,7 +25,7 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i16, mut beta : i16, m
         }
     }
     else {
-        value = i16::MAX;
+        value = i32::MAX;
         for _moveto in legal_move {
             let mut game1 = *game;
             value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, maximizing_player^true));
@@ -38,17 +38,17 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i16, mut beta : i16, m
     value
 }
 
-pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i16 {
+pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
-    if depth == 0 {
+    if depth == 0 || legal_moves.len() == 0 {
         let mut eval = eval(game, legal_moves.len() as i32);
         if !color {
             eval *= -1;
         };
         return eval;
     };
-    let mut value = i16::MIN;
+    let mut value = i32::MIN;
     for moveto_play in legal_moves {
         let (a,b) = convert_custum_move(moveto_play);
         let mut game1 = *game;
@@ -56,21 +56,21 @@ pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) ->
         if game.white_to_play { compute_move_w(a, b, &mut game1); }
         else { compute_move_b(a, b, &mut game1); }
         game1.white_to_play^=true;
-        value = max(value, (-1)*negamax(&mut game1, depth-1, color^true, nb_node));
+        value = max(value, negamax(&mut game1, depth-1, color^true, nb_node)*(-1i32));
     }
     value
 }
 
-pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : &mut u64) -> i16 {
+pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
-    if depth == 0 {
+    if depth == 0 || legal_moves.len() == 0 {
         return eval(game, legal_moves.len() as i32);
     };
     let mut value;
 
     if maximizing_player {
-        value = i16::MIN;
+        value = i32::MIN;
         for _moveto in legal_moves {
             let (a,b) = convert_custum_move(_moveto);
             let mut game1 = *game;
@@ -82,7 +82,7 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
         }
     }
     else {
-        value = i16::MAX;
+        value = i32::MAX;
         for _moveto in legal_moves {
             let (a,b) = convert_custum_move(_moveto);
             let mut game1 = *game;
@@ -97,7 +97,7 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
     value
 }
 
-fn eval(game : &Game, nmoves:i32 ) -> i16 {
+fn eval(game : &Game, nmoves:i32 ) -> i32 {
     let white_score: i32 = (1100 * game.wq.count_ones() + 500*game.wr.count_ones() + 300*game.wb.count_ones() + 300*game.wn.count_ones() + 100*game.wp.count_ones()) as i32;
     let black_score: i32 = (1100 * game.bq.count_ones() + 500*game.br.count_ones() + 300*game.bb.count_ones() + 300*game.bn.count_ones() + 100*game.bp.count_ones()) as i32;
     let mut score = white_score - black_score;
@@ -107,6 +107,13 @@ fn eval(game : &Game, nmoves:i32 ) -> i16 {
     else {
         score -= nmoves/10;
     }
-
-    score as i16
+    if nmoves == 0 {
+        if game.white_to_play {
+            score = -99999;
+        }
+        else {
+            score = 99999;
+        }
+    }
+    score
 }
