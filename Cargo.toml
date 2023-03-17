@@ -9,3 +9,6 @@ edition = "2021"
 lazy_static = "1.4.0"
 minstant = "0.1.2"
 bitintr = "0.3.0"
+
+[profile.release]
+lto = true

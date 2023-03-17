@@ -2,7 +2,6 @@ use std::{io, cmp::{Ordering, max, min}};
 use crate::chess::*;
 use crate::search::*;
 
-
 pub fn uci () {
     println!("uciok");
     let mut game = Game::default();
@@ -35,36 +34,8 @@ pub fn uci () {
 }
 fn compute(game : &Game) -> (u64, u64) {
     println!("START Compute");
-    let mut nb_node = 0u64;
-    let depth = 3;
-    let legal_moves = get_legal_move(game.white_to_play, game);
-    println!("info : {:?}", legal_moves);
-    let mut score = i16::MAX;
-    let mut bestmove = 0u64;
-    if !legal_moves.is_empty() {
-        bestmove = legal_moves.get(0).unwrap().0;
-    }
-    for moveto in legal_moves {
-        let mut game1 = *game;
-        let a = moveto.0>>8;
-        let b = moveto.0 & 255;
-        if game.white_to_play { compute_move_w(a, b, &mut game1); }
-        else { compute_move_b(a, b, &mut game1); }
-        game1.white_to_play ^= true;
-        let move_score = minimax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
-        //let move_score = negamax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
-        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
-        
-        if move_score < score {
-            score = move_score;
-            bestmove = moveto.0;
-        }
-    }
-    eprintln!();
-    let a = bestmove >> 8;
-    let b = bestmove & 255;
-    println!("NB nodes : {nb_node}");
-    (a, b)
+    compute_negamax(game)
+    //compute_minimax(game)
 }
 fn input_uci() {
     println!("id name Ptit Biscuit\n");
@@ -104,6 +75,81 @@ fn get_bitboard_from_startpos(command : &str) -> Game {
         //println!("{one_move}");
     }
     game
+}
+fn compute_negamax(game : &Game) -> (u64 , u64) {
+    println!("NEGAMAX");
+    let mut nb_node = 0u64;
+    let depth = 3;
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    println!("info : {:?}", legal_moves);
+    let mut score = i16::MIN;
+    let mut bestmove = 0u64;
+    if !legal_moves.is_empty() {
+        bestmove = legal_moves.get(0).unwrap().0;
+    }
+    for moveto in legal_moves {
+        let mut game1 = *game;
+        let a = moveto.0>>8;
+        let b = moveto.0 & 255;
+        if game.white_to_play { compute_move_w(a, b, &mut game1); }
+        else { compute_move_b(a, b, &mut game1); }
+        game1.white_to_play ^= true;
+        //let move_score = minimax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
+        let move_score = (-1)*negamax(&mut game1, depth, game.white_to_play^true, &mut nb_node);
+        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        
+        if move_score > score {
+            score = move_score;
+            bestmove = moveto.0;
+        }
+    }
+    eprintln!();
+    let a = bestmove >> 8;
+    let b = bestmove & 255;
+    println!("NB nodes : {nb_node}");
+    (a,b)
+}
+fn compute_minimax(game : &Game) -> (u64 , u64) {
+    println!("MINIMAX");
+    let depth = 3;
+    let mut nb_node = 0u64;
+    let maximizing_player = game.white_to_play;
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    println!("info : {:?}", legal_moves);
+    let mut score = if maximizing_player { i16::MAX } else { i16::MIN };
+    let mut bestmove = 0u64;
+    if !legal_moves.is_empty() {
+        bestmove = legal_moves.get(0).unwrap().0;
+    }
+    for moveto in legal_moves {
+        let mut game1 = *game;
+        let a = moveto.0>>8;
+        let b = moveto.0 & 255;
+        if game.white_to_play { compute_move_w(a, b, &mut game1); }
+        else { compute_move_b(a, b, &mut game1); }
+        game1.white_to_play ^= true;
+        let move_score = minimax(&mut game1, depth, maximizing_player^true, &mut nb_node);
+        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        if maximizing_player {
+            if move_score > score {
+                score = move_score;
+                bestmove = moveto.0;
+                println!("Change");
+            }
+        }
+        else {
+            if move_score < score {
+                score = move_score;
+                bestmove = moveto.0;
+            }
+        }
+        
+    }
+    eprintln!();
+    let a = bestmove >> 8;
+    let b = bestmove & 255;
+    println!("NB nodes : {nb_node}");
+    (a,b)
 }
 
 /*fn get_bitboard_from_fen(_command : &str) -> Game {

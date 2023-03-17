@@ -656,7 +656,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
                 let mut game1 = *game;
                 let b = wq_possi.tzcnt();
                 compute_move_w(piece, b, &mut game1);
-                let is_check = is_attacked(false, &game1);
+                let is_check = is_attacked(true, &game1);
                 if !is_check {
                     legal_moves.push(((piece<<8) + b, Piece::QUEEN));
                 }
@@ -666,13 +666,12 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> Vec<(u64, Piece)> {
         //King
         let mut possi_wk = possibility_k(game.wk) & !white;
         while possi_wk != 0 {
-            //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
             let mut game1 = *game;
             let b = possi_wk.tzcnt();
             compute_move_w((game.wk).trailing_zeros() as u64, b, &mut game1);
-            let is_check = is_attacked(false, &game1);
+            let is_check = is_attacked(true, &game1);
             if !is_check {
-                legal_moves.push((((game.bk.trailing_zeros() as u64)<<8) + b, Piece::KING));
+                legal_moves.push((((game.wk.trailing_zeros() as u64)<<8) + b, Piece::KING));
             }
             possi_wk = possi_wk & (possi_wk - 1);
         }

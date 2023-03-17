@@ -1,5 +1,6 @@
 use crate::chess::*;
 use std::cmp::{ max, min };
+//use bitintr::Popcnt;
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i16, mut beta : i16, maximizing_player : bool) -> i16 {
     let legal_move = get_legal_move(maximizing_player, game);
@@ -42,7 +43,7 @@ pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) ->
     *nb_node+=1;
     if depth == 0 {
         let mut eval = eval(game, legal_moves.len() as i32);
-        if color {
+        if !color {
             eval *= -1;
         };
         return eval;
@@ -54,8 +55,8 @@ pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) ->
 
         if game.white_to_play { compute_move_w(a, b, &mut game1); }
         else { compute_move_b(a, b, &mut game1); }
-
-        value = max(value, -negamax(&mut game1, depth-1, color^true, nb_node));
+        game1.white_to_play^=true;
+        value = max(value, (-1)*negamax(&mut game1, depth-1, color^true, nb_node));
     }
     value
 }
@@ -100,10 +101,12 @@ fn eval(game : &Game, nmoves:i32 ) -> i16 {
     let white_score: i32 = (1100 * game.wq.count_ones() + 500*game.wr.count_ones() + 300*game.wb.count_ones() + 300*game.wn.count_ones() + 100*game.wp.count_ones()) as i32;
     let black_score: i32 = (1100 * game.bq.count_ones() + 500*game.br.count_ones() + 300*game.bb.count_ones() + 300*game.bn.count_ones() + 100*game.bp.count_ones()) as i32;
     let mut score = white_score - black_score;
-    score += nmoves;
-    /*if game.white_to_play {
-        poss
-    }*/
+    if game.white_to_play {
+        score += nmoves/10;
+    }
+    else {
+        score -= nmoves/10;
+    }
 
-    score as i16    
+    score as i16
 }
