@@ -551,9 +551,6 @@ pub fn possibility_b( game : &Game) -> u64 {
     attack |= possibility_k(game.bk) & !black;
     attack
 }
-pub fn _copy_bitboard(wp:&u64, wn:&u64, wb:&u64, wr:&u64, wq:&u64, wk:&u64, bp:&u64, bn:&u64, bb:&u64, br:&u64, bq:&u64, bk:&u64) -> (u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64){
-    (*wp, *wn, *wb, *wr, *wq, *wk, *bp, *bn, *bb, *br, *bq, *bk)
-}
 
 pub fn is_attacked(target_is_wking : bool, game : &Game) -> bool {
     if target_is_wking {
