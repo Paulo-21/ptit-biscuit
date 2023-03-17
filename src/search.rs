@@ -1,6 +1,6 @@
 use crate::chess::*;
 use std::cmp::{ max, min };
-//use bitintr::Popcnt;
+use bitintr::Popcnt;
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, maximizing_player : bool) -> i32 {
     let legal_move = get_legal_move(maximizing_player, game);
@@ -98,8 +98,8 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
 }
 
 fn eval(game : &Game, nmoves:i32 ) -> i32 {
-    let white_score: i32 = (1100 * game.wq.count_ones() + 500*game.wr.count_ones() + 300*game.wb.count_ones() + 300*game.wn.count_ones() + 100*game.wp.count_ones()) as i32;
-    let black_score: i32 = (1100 * game.bq.count_ones() + 500*game.br.count_ones() + 300*game.bb.count_ones() + 300*game.bn.count_ones() + 100*game.bp.count_ones()) as i32;
+    let white_score: i32 = (1100 * game.wq.popcnt() + 500*game.wr.popcnt() + 300*game.wb.popcnt() + 300*game.wn.popcnt() + 100*game.wp.popcnt()) as i32;
+    let black_score: i32 = (1100 * game.bq.popcnt() + 500*game.br.popcnt() + 300*game.bb.popcnt() + 300*game.bn.popcnt() + 100*game.bp.popcnt()) as i32;
     let mut score = white_score - black_score;
     if game.white_to_play {
         score += nmoves/10;
