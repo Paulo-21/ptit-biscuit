@@ -2,38 +2,73 @@ use crate::chess::*;
 use std::cmp::{ max, min };
 use bitintr::Popcnt;
 
-pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, maximizing_player : bool) -> i32 {
-    let legal_move = get_legal_move(maximizing_player, game);
-    if depth == 0 {
+pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
+    *nb_node+=1;
+    let legal_move = get_legal_move(game.white_to_play, game);
+    if depth == 0 || legal_move.len() == 0 {
         return eval(game, legal_move.len() as i32);
     };
     let mut value;
-    if maximizing_player {
+    if !game.white_to_play {
+        value = i32::MAX;
+        for moveto in legal_move {
+            let a = moveto.0 >> 8;
+            let b = moveto.0 & 255;
+            let mut game1 = *game;
+            if game.white_to_play { compute_move_w(a, b, &mut game1); }
+            else { compute_move_b(a, b, &mut game1); }
+            game1.white_to_play ^= true;
+            
+            value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
+            if alpha >= value {
+                return value;
+            }
+            beta = min(beta, value);
+        }
+    }
+    else {
         value = i32::MIN;
         for moveto in legal_move {
             let a = moveto.0 >> 8;
             let b = moveto.0 & 255;
             let mut game1 = *game;
-            game1.white_to_play ^= true;
-            if game1.white_to_play { compute_move_w(a, b, &mut game1); }
+            if game.white_to_play { compute_move_w(a, b, &mut game1); }
             else { compute_move_b(a, b, &mut game1); }
-            value = max(value, alpha_beta(&mut game1, depth-1, alpha, beta, maximizing_player^true));
-            if value > beta {
-                break;
+            game1.white_to_play ^= true;
+            
+            value = max(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
+            if value >= beta {
+                return value;
             }
-            alpha = max(alpha, value);
+            alpha = max(alpha, value)
         }
     }
-    else {
-        value = i32::MAX;
-        for _moveto in legal_move {
-            let mut game1 = *game;
-            value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, maximizing_player^true));
-            if value < alpha {
-                break;
-            }
-            beta = min(beta, value)
+    value
+}
+
+pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32) -> i32 {
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    if depth == 0 || legal_moves.len() == 0 {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return eval;
+    };
+    let mut value = i32::MIN;
+    for moveto_play in legal_moves {
+        let (a,b) = convert_custum_move(moveto_play);
+        let mut game1 = *game;
+
+        if game.white_to_play { compute_move_w(a, b, &mut game1); }
+        else { compute_move_b(a, b, &mut game1); }
+        game1.white_to_play^=true;
+        
+        value = max(value, alpha_beta_neg(&mut game1, depth-1, -beta, -alpha)*(-1i32));
+        if value >= beta {
+            return value;
         }
+        alpha = max(alpha, value)
     }
     value
 }
@@ -97,16 +132,21 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
     value
 }
 
-fn eval(game : &Game, nmoves:i32 ) -> i32 {
+pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
     let white_score: i32 = (1100 * game.wq.popcnt() + 500*game.wr.popcnt() + 300*game.wb.popcnt() + 300*game.wn.popcnt() + 100*game.wp.popcnt()) as i32;
     let black_score: i32 = (1100 * game.bq.popcnt() + 500*game.br.popcnt() + 300*game.bb.popcnt() + 300*game.bn.popcnt() + 100*game.bp.popcnt()) as i32;
     let mut score = white_score - black_score;
     if game.white_to_play {
-        score += nmoves/10;
+        score += nmoves;
+        score -= get_legal_move(false, game).len() as i32;
     }
     else {
-        score -= nmoves/10;
+        score += get_legal_move(true, game).len() as i32;
+        score -= nmoves; 
     }
+    score += (possibility_w(game) & SQUARE_CENTER).popcnt() as i32;
+    score -= (possibility_b(game) & SQUARE_CENTER).popcnt() as i32;
+    
     if nmoves == 0 {
         if game.white_to_play {
             score = -99999;
