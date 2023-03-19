@@ -265,13 +265,13 @@ pub fn possibility_bp2( bpawn: u64, empty : u64, white : u64) -> u64 {
     pmoves1 | pmoves2 | pmoves3 | pmoves4
 }
 pub fn attack_wp(wpawn : u64, black : u64) -> u64 {
-    let pmoves1 = wpawn<<7 & black & !RANK_MASK[7] & !FILE_MASKS[0];
-    let pmoves2 = wpawn<<9 & black & !RANK_MASK[7] & !FILE_MASKS[7];
+    let pmoves1 = wpawn<<7 & black & !FILE_MASKS[0];
+    let pmoves2 = wpawn<<9 & black & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
 pub fn attack_bp(wpawn : u64, white : u64) -> u64 {
-    let pmoves1 = wpawn>>7 & white & !RANK_MASK[7] & !FILE_MASKS[0];
-    let pmoves2 = wpawn>>9 & white & !RANK_MASK[7] & !FILE_MASKS[7];
+    let pmoves1 = wpawn>>7 & white & !FILE_MASKS[0];
+    let pmoves2 = wpawn>>9 & white & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
 pub fn possibility_n(knight : u64) -> u64 {

@@ -4,10 +4,20 @@ use crate::chess::*;
 pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
     if nmoves == 0 {
         if game.white_to_play {
-            return -99999 + (50 * game.nb_coups as i32);
+            if is_attacked(game.white_to_play, game) {
+                return -99999 + (50 * game.nb_coups as i32);
+            }
+            else {
+                return 90999 - (50 * game.nb_coups as i32);
+            }
         }
         else {
-            return 99999 - (50 * game.nb_coups as i32);
+            if is_attacked(game.white_to_play, game) {
+                return 99999 - (50 * game.nb_coups as i32);
+            }
+            else {
+                return -90999 + (50 * game.nb_coups as i32);
+            }
         }
     }
     let white_score: i32 = (1100 * game.wq.popcnt() + 500*game.wr.popcnt() + 300*game.wb.popcnt() + 300*game.wn.popcnt() + 100*game.wp.popcnt()) as i32;
