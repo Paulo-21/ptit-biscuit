@@ -1,5 +1,6 @@
 use std::io;
 mod chess;
+mod eval;
 mod uci;
 mod search;
 use uci::*;
