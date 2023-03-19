@@ -33,6 +33,7 @@ pub struct Game {
     bking_rook_never_move : bool,
     bqueen_rook_never_move : bool,
     bking_never_move : bool,
+    pub nb_coups : u16,
 }
 impl Game {
     pub fn occupied(&self) -> u64 {
@@ -158,6 +159,7 @@ pub fn get_game_from_basicpos() -> Game {
         white_to_play : true,
         wking_never_move : true, wqueen_rook_never_move : true, wking_rook_never_move : true,
         bking_never_move : true, bqueen_rook_never_move : true, bking_rook_never_move : true,
+        nb_coups : 0,
     }
 }
 pub fn _draw_bitboard(bitboard : u64) {
@@ -170,6 +172,33 @@ pub fn _draw_bitboard(bitboard : u64) {
         }
     }
     println!();
+}
+
+pub fn draw_the_game_state(game : &Game) {
+    println!("WPAWN");
+    _draw_bitboard(game.wp);
+    println!("WKNIGHT");
+    _draw_bitboard(game.wn);
+    println!("WBISHOP");
+    _draw_bitboard(game.wb);
+    println!("WROOK");
+    _draw_bitboard(game.wr);
+    println!("WQUEEN");
+    _draw_bitboard(game.wq);
+    println!("WKING");
+    _draw_bitboard(game.wk);
+    println!("BPAWN");
+    _draw_bitboard(game.bp);
+    println!("BKNIGHT");
+    _draw_bitboard(game.bn);
+    println!("BBISHOP");
+    _draw_bitboard(game.bb);
+    println!("BROOK");
+    _draw_bitboard(game.br);
+    println!("BQUEEN");
+    _draw_bitboard(game.bq);
+    println!("BKING");
+    _draw_bitboard(game.bk);
 }
 pub fn _count_bit(mut bit : u64) -> i8 {
     let mut count = 0;
@@ -339,9 +368,9 @@ pub fn compute_move_w(mut a:u64, mut b:u64, game : &mut Game) -> i8 {
     }
     else if game.wk & a != 0 {
         //println!("{square_b} {} {} {}", game.wking_never_move, game.wking_rook_never_move, game.wqueen_rook_never_move);
-        if square_b == 2 { // Grand roque
+        if square_b == 2 && square_a == 4{ // Grand roque
             //check if the king and the rook has never move
-            if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(1) + 2u64.pow(2)) == 0 && possibility_b(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
+            if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(1) + 2u64.pow(2)) == 0 && possibility_b(game) & (2u64.pow(1) + 2u64.pow(2)) == 0 {
                 game.wking_never_move = false;
                 game.wking_rook_never_move = false;
                 //Do grand roque
@@ -355,7 +384,7 @@ pub fn compute_move_w(mut a:u64, mut b:u64, game : &mut Game) -> i8 {
             //check if no piece is between
             //check if square between isn't attacked
         }
-        else if square_b == 6 { //Petit Roque
+        else if square_b == 6 && square_a == 4 { //Petit Roque
             if game.wking_never_move && game.wqueen_rook_never_move && (black | white) & (2u64.pow(6) + 2u64.pow(5)) == 0 && possibility_b(game) & (2u64.pow(6) + 2u64.pow(5)) == 0 {
                 game.wking_never_move = false;
                 game.wqueen_rook_never_move = false;
@@ -449,7 +478,7 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> i8 {
     else if game.bk & a != 0 {
         //println!("{square_b} {} {} {}", game.bking_never_move, (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0, possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0);
         
-        if square_b == 58 && game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
+        if square_a == 60 && square_b == 58 && game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
                 //println!("Grand roque");
                 game.bking_never_move = false;
                 game.bking_rook_never_move = false;
@@ -463,7 +492,7 @@ pub fn compute_move_b(mut a : u64, mut b: u64, game :&mut Game) -> i8 {
             //check if no piece is between
             //check if square between isn't attacked
         
-        else if square_b == 62  && game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+        else if square_a == 60 && square_b == 62  && game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
                 game.bking_never_move = false;
                 game.bqueen_rook_never_move = false;
                 game.bk &= !a;

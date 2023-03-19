@@ -38,6 +38,8 @@ fn compute(game : &Game) -> (u64, u64) {
     let now = Instant::now();
     let depth = 5;
     println!("Pronfondeur : {depth}");
+    println!("GAME STATE");
+    draw_the_game_state(game);
     //compute_negamax(game)
     //let res = compute_alpha_beta_neg(game);
     //let res = compute_minimax(game);
@@ -74,13 +76,33 @@ fn get_bitboard_from_startpos(command : &str) -> Game {
     let mut game = get_game_from_basicpos();
     for one_move in move_tab {
         let (a,b) = convert_move_to_bitboard(one_move);
-        if game.white_to_play {
-            compute_move_w(a, b, &mut game);
+        let reponse = if game.white_to_play {
+            compute_move_w(a, b, &mut game)
         }
         else {
-            compute_move_b(a, b, &mut game);
+            compute_move_b(a, b, &mut game)
+        };
+        if reponse >= 0 {
+            game.white_to_play ^= true;
         }
-        game.white_to_play ^= true;
+        else {
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+            println!("ERROR Startpos");
+        }
         //println!("{one_move}");
     }
     game

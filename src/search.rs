@@ -9,16 +9,16 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
         return eval(game, legal_move.len() as i32);
     };
     let mut value;
+    game.nb_coups+=1;
     if !game.white_to_play {
         value = i32::MAX;
         for moveto in legal_move {
             let a = moveto.0 >> 8;
             let b = moveto.0 & 255;
             let mut game1 = *game;
-            if game.white_to_play { compute_move_w(a, b, &mut game1); }
-            else { compute_move_b(a, b, &mut game1); }
-            game1.white_to_play ^= true;
             
+            game1.white_to_play ^= true;
+            compute_move_b(a, b, &mut game1);
             value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
             if alpha >= value {
                 return value;
@@ -32,8 +32,7 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
             let a = moveto.0 >> 8;
             let b = moveto.0 & 255;
             let mut game1 = *game;
-            if game.white_to_play { compute_move_w(a, b, &mut game1); }
-            else { compute_move_b(a, b, &mut game1); }
+            compute_move_w(a, b, &mut game1);
             game1.white_to_play ^= true;
             
             value = max(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
