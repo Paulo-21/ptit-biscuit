@@ -308,8 +308,6 @@ pub fn hyperbola_quintessence(occupied : u64, mask: u64, mut number : u64) -> u6
     reverse = reverse.wrapping_sub(number.swap_bytes().wrapping_mul(2));
     forward ^= reverse.swap_bytes();
     forward & mask
-    //( - 2 * number) ^ ((occupied & mask).swap_bytes() - 2 * number.swap_bytes()).swap_bytes()
-    //(occupied - 2 * number) ^ (occupied.reverse_bits() - 2 * number.reverse_bits()).reverse_bits()
 }
 pub fn rank_attacks(occupied: u64, sq: u64) -> u64 {
     let f = sq & 7; // sq.file() as Bitboard;
