@@ -13,12 +13,11 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
     if !game.white_to_play {
         value = i32::MAX;
         for moveto in legal_move {
-            let a = moveto.0 >> 8;
-            let b = moveto.0 & 255;
+            let (a, b, prom) = convert_custum_move(moveto);
             let mut game1 = *game;
             
             game1.white_to_play ^= true;
-            compute_move_b(a, b, &mut game1);
+            compute_move_b((a, b, prom), &mut game1);
             value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
             if alpha >= value {
                 return value;
@@ -29,10 +28,9 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
     else {
         value = i32::MIN;
         for moveto in legal_move {
-            let a = moveto.0 >> 8;
-            let b = moveto.0 & 255;
+            let (a,b, prom) = convert_custum_move(moveto);
             let mut game1 = *game;
-            compute_move_w(a, b, &mut game1);
+            compute_move_w((a, b, prom), &mut game1);
             game1.white_to_play ^= true;
             
             value = max(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
@@ -44,7 +42,7 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
     }
     value
 }
-
+/*
 pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     if depth == 0 || legal_moves.len() == 0 {
@@ -56,11 +54,12 @@ pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32) 
     };
     let mut value = i32::MIN;
     for moveto_play in legal_moves {
-        let (a,b) = convert_custum_move(moveto_play);
+        let (a,b, prom) = convert_custum_move(moveto_play);
+
         let mut game1 = *game;
 
-        if game.white_to_play { compute_move_w(a, b, &mut game1); }
-        else { compute_move_b(a, b, &mut game1); }
+        if game.white_to_play { compute_move_w((a, b, Piece::NONE), &mut game1); }
+        else { compute_move_b((a, b, Piece::NONE), &mut game1); }
         game1.white_to_play^=true;
         
         value = max(value, alpha_beta_neg(&mut game1, depth-1, -beta, -alpha)*(-1i32));
@@ -94,7 +93,7 @@ pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) ->
     }
     value
 }
-
+*/
 pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
@@ -106,11 +105,10 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
     if maximizing_player {
         value = i32::MIN;
         for _moveto in legal_moves {
-            let (a,b) = convert_custum_move(_moveto);
+            let (a,b, prom) = convert_custum_move(_moveto);
             let mut game1 = *game;
-
-            if game.white_to_play { compute_move_w(a, b, &mut game1); }
-            else { compute_move_b(a, b, &mut game1); }
+            compute_move_w((a, b, prom), &mut game1);
+            
             game1.white_to_play ^= true;
             value = max(value, minimax(&mut game1, depth-1, false, nb_node));
         }
@@ -118,11 +116,9 @@ pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : 
     else {
         value = i32::MAX;
         for _moveto in legal_moves {
-            let (a,b) = convert_custum_move(_moveto);
+            let (a,b, prom) = convert_custum_move(_moveto);
             let mut game1 = *game;
-            
-            if game.white_to_play { compute_move_w(a, b, &mut game1); }
-            else { compute_move_b(a, b, &mut game1); }
+            compute_move_b((a, b,prom), &mut game1);
 
             game1.white_to_play ^= true;
             value = min(value, minimax(&mut game1, depth-1, true, nb_node));
