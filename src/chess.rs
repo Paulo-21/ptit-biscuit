@@ -589,12 +589,12 @@ pub fn possibility_w( game : &Game) -> u64 {
     }
     let mut copy_wb = game.wb;
     while copy_wb != 0 {
-        attack |= diag_antid_moves(copy_wb.tzcnt() as u64, occupied) & !white;
+        attack |= diag_antid_moves(copy_wb.tzcnt() , occupied) & !white;
         copy_wb &= copy_wb-1;
     }
     let mut copy_wr = game.wr;
     while copy_wr != 0 {
-        attack |= hv_moves(copy_wr.tzcnt() as u64, occupied) & !white;
+        attack |= hv_moves(copy_wr.tzcnt() , occupied) & !white;
         copy_wr &= copy_wr-1;
     }
     let mut copy_wq = game.wq;

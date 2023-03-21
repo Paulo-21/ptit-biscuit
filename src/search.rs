@@ -5,7 +5,7 @@ use std::cmp::{ max, min };
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
     let legal_move = get_legal_move(game.white_to_play, game);
-    if depth == 0 || legal_move.len() == 0 {
+    if depth == 0 || legal_move.is_empty() {
         return eval(game, legal_move.len() as i32);
     };
     let mut value;
@@ -97,7 +97,7 @@ pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) ->
 pub fn minimax(game: &mut Game, depth : i8, maximizing_player : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
-    if depth == 0 || legal_moves.len() == 0 {
+    if depth == 0 || legal_moves.is_empty() {
         return eval(game, legal_moves.len() as i32);
     };
     let mut value;
