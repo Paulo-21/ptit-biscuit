@@ -43,7 +43,7 @@ pub fn uci () {
 fn compute(game : &Game) -> (u64, u64, Piece) {
     println!("START Compute");
     let now = Instant::now();
-    let depth = 1;
+    let depth = 5;
     println!("Pronfondeur : {depth}");
     println!("GAME STATE");
     draw_the_game_state(game);
