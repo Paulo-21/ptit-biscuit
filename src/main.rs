@@ -23,7 +23,8 @@ fn main() {
                 uci();
             },
             "perft" => {
-                let game = Game::default();
+                let mut game = Game::default();
+                //game.white_to_play ^= true;
                 let mut i = 1;
                 loop {
                     let now = Instant::now();

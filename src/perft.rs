@@ -1,7 +1,7 @@
 use crate::chess::*;
 pub fn perft(game: Game, depth : i8) -> usize {
     let mut nb_nodes = 0;
-    let legal_moves = get_legal_move(true, &game);
+    let legal_moves = get_legal_move(game.white_to_play, &game);
     if depth == 1 {
         return legal_moves.len();
     }

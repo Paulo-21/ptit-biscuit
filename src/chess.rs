@@ -453,7 +453,8 @@ pub fn compute_move_w(chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
             }
             return -1;
         }
-        moves = possibility_k(game.wk) & !white;
+        moves = KING_MOVE[square_a as usize] & !white;
+        //moves = possibility_k(game.wk) & !white;
         from = &mut game.wk;
         if moves & b != 0 {
             game.wking_never_move = false;
@@ -556,7 +557,8 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
                 return 0;
             
         }
-        moves = possibility_k(game.bk) & !black;
+        moves = KING_MOVE[square_a as usize] & !black;
+        //moves = possibility_k(game.bk) & !black;
         from = &mut game.bk;
         if moves & b != 0 {
             game.bking_never_move = false;
@@ -586,11 +588,14 @@ pub fn possibility_w( game : &Game) -> u64 {
     let occupied = black | white;
     let mut attack = 0;
     attack |= attack_wp(game.wp, black);
-    
-    if game.wn != 0 {
-        attack |= possibility_n(game.wn) & !white;
-        //attack |= KNIGHT_MOVE(game.wn.) & !white;
+    let mut copy_wn = game.wn;
+    while copy_wn != 0 {
+        attack |= KNIGHT_MOVE[copy_wn.tzcnt() as usize] & !white;
+        copy_wn &= copy_wn-1;
     }
+    /*f game.wn != 0 {
+        attack |= possibility_n(game.wn) & !white;
+    }*/
     let mut copy_wb = game.wb;
     while copy_wb != 0 {
         attack |= diag_antid_moves(copy_wb.tzcnt() , occupied) & !white;
@@ -637,7 +642,8 @@ pub fn possibility_b( game : &Game) -> u64 {
         attack |= (hv_moves(copy_bq.tzcnt(), occupied) | diag_antid_moves(copy_bq.tzcnt(), occupied) ) & !black;
         copy_bq &= copy_bq-1;
     }
-    attack |= possibility_k(game.bk) & !black;
+    attack |= KING_MOVE[game.bk.tzcnt() as usize];
+    //attack |= possibility_k(game.bk) & !black;
     attack
 }
 
