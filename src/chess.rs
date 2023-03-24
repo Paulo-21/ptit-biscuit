@@ -576,6 +576,10 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     }
     else { -1 }
 }
+/*
+pub fn is_white_attack_at(game : &Game) -> bool {
+
+}*/
 pub fn possibility_w( game : &Game) -> u64 {
     let black = game.black();
     let white = game.white();
@@ -602,8 +606,8 @@ pub fn possibility_w( game : &Game) -> u64 {
         attack |= (hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied)) & !white;
         copy_wq &= copy_wq-1;
     }
-    attack |= possibility_k(game.wk) & !white;
-    //attack |= KING_MOVE[game.wk.tzcnt() as usize];
+    //attack |= possibility_k(game.wk) & !white;
+    attack |= KING_MOVE[game.wk.tzcnt() as usize];
     
     attack
 }
