@@ -8,6 +8,7 @@ use crate::chess::*;
 use std::env;
 mod perft;
 use perft::*;
+
 use std::time::Instant;
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -23,7 +24,7 @@ fn main() {
                 uci();
             },
             "perft" => {
-                let mut game = Game::default();
+                let game = Game::default();
                 //game.white_to_play ^= true;
                 let mut i = 1;
                 loop {

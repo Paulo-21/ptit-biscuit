@@ -284,9 +284,9 @@ pub fn attack_wp(wpawn : u64, black : u64) -> u64 {
     let pmoves2 = wpawn<<9 & black;// & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
-pub fn attack_bp(wpawn : u64, white : u64) -> u64 {
-    let pmoves1 = wpawn>>7 & white;// & !FILE_MASKS[0];
-    let pmoves2 = wpawn>>9 & white;// & !FILE_MASKS[7];
+pub fn attack_bp(bpawn : u64, black : u64) -> u64 {
+    let pmoves1 = bpawn>>7 & black;// & !FILE_MASKS[0];
+    let pmoves2 = bpawn>>9 & black;// & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
 pub fn possibility_n(knight : u64) -> u64 {
@@ -646,7 +646,40 @@ pub fn possibility_b( game : &Game) -> u64 {
     //attack |= possibility_k(game.bk) & !black;
     attack
 }
+fn is_attacked_by_slider_b (game : &Game, square : u64) -> bool {
+    let occupied = game.occupied();
+    let mut copy_bb = game.bb;
+    while copy_bb != 0 {
+        if diag_antid_moves(copy_bb.tzcnt() , occupied) & square != 0{
+            return true;
+        };
+        copy_bb &= copy_bb-1;
+    }
+    let mut copy_br = game.br;
+    while copy_br != 0 {
+        if hv_moves(copy_br.tzcnt(), occupied) & square != 0 {
+            return true;
+        };
+        copy_br &= copy_br-1;
+    }
+    let mut copy_bq = game.bq;
+    while copy_bq != 0 {
+        if hv_moves(copy_bq.tzcnt(), occupied) & square != 0 || diag_antid_moves(copy_bq.tzcnt(), occupied)  & square != 0 {
+            return true;
+        };
+        copy_bq &= copy_bq-1;
+    }
+    return false;
 
+}
+fn attack_normal_piece(game : &Game) -> u64 {
+    let mut attack = 0;
+    let k = game.bk.tzcnt();
+    attack |= KING_MOVE[game.bk.tzcnt() as usize];
+    attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize];
+    attack |= attack_bp(game.bp, k);
+    attack
+}
 pub fn is_attacked(target_is_wking : bool, game : &Game) -> bool {
     if target_is_wking {
         possibility_b(game) & game.wk != 0
