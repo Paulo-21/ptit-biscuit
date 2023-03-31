@@ -9,7 +9,6 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
         return eval(game, legal_move.len() as i32);
     };
     let mut value;
-    game.nb_coups+=1;
     if !game.white_to_play {
         value = i32::MAX;
         for moveto in legal_move {
