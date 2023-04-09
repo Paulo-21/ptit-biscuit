@@ -25,7 +25,6 @@ fn main() {
             },
             "perft" => {
                 let game = Game::default();
-                //game.white_to_play ^= true;
                 let mut i = 1;
                 loop {
                     let now = Instant::now();
