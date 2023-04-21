@@ -1,4 +1,4 @@
-use std::{io, cmp::{Ordering, max, min}};
+use std::{io, cmp::{Ordering}};
 use crate::chess::*;
 use crate::search::*;
 use std::time::Instant;
@@ -64,7 +64,8 @@ fn input_ready() {
     println!("readyok");
 }
 fn input_position(mut commande : &str) -> Game {
-    let game = if commande.contains("startpos") {
+    
+    if commande.contains("startpos") {
         commande = &commande[15..];
         if !commande.is_empty() {
             return get_bitboard_from_startpos(commande)
@@ -75,8 +76,7 @@ fn input_position(mut commande : &str) -> Game {
         commande = &commande[3..];
         get_bitboard_from_startpos(commande)
         //get_bitboard_from_fen(commande)
-    };
-    game
+    }
 }
 fn get_bitboard_from_startpos(command : &str) -> Game {
     let move_tab = command.split_ascii_whitespace();
@@ -171,11 +171,9 @@ fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
                 bestmove = moveto.0;
             }
         }
-        else {
-            if move_score < score {
-                score = move_score;
-                bestmove = moveto.0;
-            }
+        else if move_score < score {
+            score = move_score;
+            bestmove = moveto.0;
         }
     }
     eprintln!();
@@ -242,11 +240,9 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
                 bestmove = moveto;
             }
         }
-        else {
-            if move_score < score {
-                score = move_score;
-                bestmove = moveto;
-            }
+        else if move_score < score {
+            score = move_score;
+            bestmove = moveto;
         }
     }
     eprintln!();

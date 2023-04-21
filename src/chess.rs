@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use bitintr::{ Tzcnt, Lzcnt };//, Lzcnt, Andn};
+use bitintr::{ Tzcnt };//, Lzcnt, Andn};
 use std::collections::VecDeque;
 
 static BASICSTART_CHESS_BOARD:[[char;8];8] = [
@@ -669,7 +669,7 @@ fn is_attacked_by_slider_b (game : &Game, square : u64) -> bool {
         };
         copy_bq &= copy_bq-1;
     }
-    return false;
+    false
 
 }
 fn attack_normal_piece(game : &Game) -> u64 {

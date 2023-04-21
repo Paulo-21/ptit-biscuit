@@ -18,7 +18,7 @@ fn main() {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
         let mut split = buffer.split_ascii_whitespace();
-        let n = split.next().unwrap();
+        let _n = split.next().unwrap();
         match buffer.trim() {
             "uci" => {
                 uci();
