@@ -13,6 +13,7 @@ use std::time::Instant;
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
     println!("P'TIT BISCUIT");
+
     loop {
         //print!(">");
         let mut buffer = String::new();
