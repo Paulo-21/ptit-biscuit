@@ -9,20 +9,18 @@ pub fn uci () {
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
-        let mut response = String::new();
-        let command = buffer.trim();
+        let command : Vec<&str> = buffer.trim().split_ascii_whitespace().collect();
 
-        if command == "uci"  {
+        if command[0] == "uci"  {
             input_uci();
         }
-        else if command == "isready" {
+        else if command[0] == "isready" {
             input_ready();
         }
-        else if command.len() >= 8 && command[..8].cmp("position") == Ordering::Equal {
-            
-            game = input_position(&command[ 9..]);
+        else if command[0] == "position" {
+            game = input_position(command);
         }
-        else if command.len() >= 2 && command[..2].cmp("go") == Ordering::Equal {
+        else if command[0] == "go" {
             let (a, b, prom) = compute(&game);
             let bestmovea = convert_square_to_move(a);
             let bestmoveb = convert_square_to_move(b);
@@ -35,8 +33,8 @@ pub fn uci () {
                 }
             }
         }
-        else if command == "stop" {
-            response.push_str("bestmove e2e4");
+        else if command[0] == "stop" {
+            break;
         }
     }
 }
@@ -64,25 +62,25 @@ fn input_uci() {
 fn input_ready() {
     println!("readyok");
 }
-fn input_position(mut commande : &str) -> Game {
+fn input_position(mut commande : Vec<&str>) -> Game {
     
-    if commande.contains("startpos") {
-        commande = &commande[15..];
-        if !commande.is_empty() {
-            return get_bitboard_from_startpos(commande)
-        }
-        Game::default()
+    if commande[1] == "startpos" {
+        return get_bitboard_from_startpos(commande);
     }
     else {// if commande.contains("fen") {
-        commande = &commande[3..];
+        
         get_bitboard_from_startpos(commande)
         //get_bitboard_from_fen(commande)
     }
 }
-fn get_bitboard_from_startpos(command : &str) -> Game {
-    let move_tab = command.split_ascii_whitespace();
+fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
+    let move_tab = command.iter().skip(2);
     let mut game = get_game_from_basicpos();
+    if move_tab.len() <= 0 {
+        return game;
+    }
     for one_move in move_tab {
+        println!("{}", one_move);
         let (a,b, prom) = convert_move_to_bitboard(one_move);
         let reponse = if game.white_to_play {
             compute_move_w((a, b, prom), &mut game)

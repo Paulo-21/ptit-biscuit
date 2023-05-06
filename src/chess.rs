@@ -279,9 +279,9 @@ pub fn possibility_bp2( bpawn: u64, empty : u64, white : u64) -> u64 {
     let pmoves4 = bpawn>>16 & empty & (empty>>8) & RANK_MASK[4];
     pmoves1 | pmoves2 | pmoves3 | pmoves4
 }
-pub fn attack_wp(wpawn : u64, black : u64) -> u64 {
-    let pmoves1 = wpawn<<7 & black;// & !FILE_MASKS[0];
-    let pmoves2 = wpawn<<9 & black;// & !FILE_MASKS[7];
+pub fn attack_wp(wpawn : u64, white : u64) -> u64 {
+    let pmoves1 = wpawn<<7 & white;// & !FILE_MASKS[0];
+    let pmoves2 = wpawn<<9 & white;// & !FILE_MASKS[7];
     pmoves1 | pmoves2
 }
 pub fn attack_bp(bpawn : u64, black : u64) -> u64 {
@@ -625,7 +625,8 @@ pub fn possibility_b( game : &Game) -> u64 {
     attack |= attack_bp(game.bp, black);
 
     if game.bn != 0 {
-        attack |= possibility_n(game.bn) & !black;
+        attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize] & !black;
+        //attack |= possibility_n(game.bn) & !black;
     }
     let mut copy_bb = game.bb;
     while copy_bb != 0 {
@@ -672,13 +673,47 @@ fn is_attacked_by_slider_b (game : &Game, square : u64) -> bool {
     false
 
 }
-fn attack_normal_piece(game : &Game) -> u64 {
-    let mut attack = 0;
+fn is_attacked_by_slider_w (game : &Game, square : u64) -> bool {
+    let occupied = game.occupied();
+    let mut copy_wb = game.wb;
+    while copy_wb != 0 {
+        if diag_antid_moves(copy_wb.tzcnt() , occupied) & square != 0 {
+            return true;
+        };
+        copy_wb &= copy_wb-1;
+    }
+    let mut copy_wr = game.wr;
+    while copy_wr != 0 {
+        if hv_moves(copy_wr.tzcnt(), occupied) & square != 0 {
+            return true;
+        };
+        copy_wr &= copy_wr-1;
+    }
+    let mut copy_wq = game.wq;
+    while copy_wq != 0 {
+        if hv_moves(copy_wq.tzcnt(), occupied) & square != 0 || diag_antid_moves(copy_wq.tzcnt(), occupied)  & square != 0 {
+            return true;
+        };
+        copy_wq &= copy_wq-1;
+    }
+    false
+
+}
+fn attack_normal_piece_b(game : &Game, black : u64) -> u64 {
+    let black = game.black();
     let k = game.bk.tzcnt();
-    attack |= KING_MOVE[game.bk.tzcnt() as usize];
+    let mut attack = KING_MOVE[k as usize];
     attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize];
-    attack |= attack_bp(game.bp, k);
-    attack
+    attack |= attack_bp(game.bp, black);
+    attack & black
+}
+fn attack_normal_piece_w(game : &Game, white : u64) -> u64 {
+    let white = game.white();
+    let k = game.wk.tzcnt();
+    let mut attack = KING_MOVE[k as usize];
+    attack |= KNIGHT_MOVE[game.wn.tzcnt() as usize];
+    attack |= attack_wp(game.wp, white);
+    attack & white
 }
 pub fn is_attacked(target_is_wking : bool, game : &Game) -> bool {
     if target_is_wking {
@@ -698,6 +733,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     
     if side_w { //White Possibility
         //Pions Possibility
+        //let black_normal = attack_normal_piece_b(&game, black);
+        let k = game.wk.tzcnt();
         let mut wp_test = game.wp;
         while  wp_test != 0 {
             let piece = wp_test.tzcnt();
@@ -715,6 +752,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let mut game1 = *game;
                 let b = possi_wp.tzcnt();
                 let capture = compute_move_w((piece, b, promote_piece), &mut game1);
+                //let is_check = is_attacked_by_slider_w(&game1, k) &&  black_normal & k != 0;
                 let is_check = is_attacked(true, &game1);
                 if !is_check {
                     if capture > 0{
@@ -788,6 +826,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let b = wr_possi.tzcnt();
                 let capture = compute_move_w((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
+                wr_possi = wr_possi & (wr_possi - 1);
                 if !is_check {
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::ROOK));
@@ -796,7 +835,6 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::ROOK));
                     }
                 }
-                wr_possi = wr_possi & (wr_possi - 1);
             }
         }
 
@@ -842,6 +880,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     }
     else { //Black Possiblity
         //Pions Possibility
+        //let white_normal = attack_normal_piece_w(&game, white);
         let mut bp_test = game.bp;
         while  bp_test != 0 {
             let piece = bp_test.tzcnt();

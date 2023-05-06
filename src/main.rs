@@ -4,10 +4,11 @@ mod eval;
 mod uci;
 mod search;
 use uci::*;
-use crate::chess::*;
+use crate::{chess::*, table_transposition::TranspositionTable};
 use std::env;
 mod perft;
 use perft::*;
+mod table_transposition;
 
 use std::time::Instant;
 fn main() {
@@ -30,6 +31,17 @@ fn main() {
                 loop {
                     let now = Instant::now();
                     println!("Perft <{i}> : {} {} milliseconde", perft(game, i), now.elapsed().as_millis());
+                    i+=1;
+                }
+            }
+            "perfth" => {
+                let game = Game::default();
+                let mut i = 1;
+                loop {
+                    let now = Instant::now();
+                    let hash_table = TranspositionTable::with_capacity(21000);
+                    println!("Hash table : {}", hash_table.table.len());
+                    println!("Perft <{i}> : {} {} milliseconde", perft_hash(game, &hash_table, i), now.elapsed().as_millis());
                     i+=1;
                 }
             }
