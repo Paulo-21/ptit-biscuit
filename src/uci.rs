@@ -39,11 +39,11 @@ pub fn uci () {
     }
 }
 fn compute(game : &Game) -> (u64, u64, Piece) {
-    println!("START Compute");
+    eprintln!("START Compute");
     let now = Instant::now();
     let depth = 5;
-    println!("Pronfondeur : {depth}");
-    println!("GAME STATE");
+    eprintln!("Pronfondeur : {depth}");
+    eprintln!("GAME STATE");
     draw_the_game_state(game);
     //compute_negamax(game)
     //let res = compute_alpha_beta_neg(game);
@@ -51,7 +51,7 @@ fn compute(game : &Game) -> (u64, u64, Piece) {
     let res = compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth );
 
-    println!("Compute in : {} milli seconde", now.elapsed().as_millis());
+    eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());
     res
 }
 fn input_uci() {
@@ -114,12 +114,12 @@ fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
 }
 
 fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
-    println!("MINIMAX");
+    eprintln!("MINIMAX");
     let mut nb_node = 0u64;
     let maximizing_player = game.white_to_play;
     println!("{maximizing_player}");
     let legal_moves = get_legal_move(game.white_to_play, game);
-    println!("info : {:?}", legal_moves);
+    eprintln!("info : {:?}", legal_moves);
     let mut score = if maximizing_player { i32::MIN } else { i32::MAX };
     let mut bestmove = 0u64;
     if !legal_moves.is_empty() {
@@ -152,12 +152,12 @@ fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
 }
 
 fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
-    println!("ALPHA BETA");
+    eprintln!("ALPHA BETA");
     let alpha = i32::MIN;
     let beta = i32::MAX;
     let mut nb_node = 0u64;
     let legal_moves = get_legal_move(game.white_to_play, game);
-    println!("info : {:?}", legal_moves);
+    eprintln!("info : {:?}", legal_moves);
     let mut score = if game.white_to_play { i32::MIN } else { i32::MAX };
     let mut bestmove = (0u64, Piece::NONE);
     if !legal_moves.is_empty() {
@@ -184,7 +184,7 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     }
     eprintln!();
     let (a, b, prom) = convert_custum_move(bestmove);
-    println!("NB nodes : {nb_node}");
+    eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
 }
 fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
