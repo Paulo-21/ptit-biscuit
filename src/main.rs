@@ -14,8 +14,8 @@ use std::time::Instant;
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
     println!("P'TIT BISCUIT");
-
-    loop {
+    uci();
+    /*loop {
         //print!(">");
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
@@ -50,5 +50,5 @@ fn main() {
             }
         }
 
-    }
+    }*/
 }

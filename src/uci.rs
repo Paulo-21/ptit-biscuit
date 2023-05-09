@@ -1,17 +1,55 @@
-use std::{io, cmp::{Ordering}};
+use std::io;
 use crate::chess::*;
 use crate::search::*;
 use std::time::Instant;
+use crate::perft::*;
 
 pub fn uci () {
-    println!("uciok");
     let mut game = Game::default();
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
         let command : Vec<&str> = buffer.trim().split_ascii_whitespace().collect();
+        match command[0] {
+            "uci" => {
+                input_uci();
+            },
+            "isready" => {
+                input_ready();
+            },
+            "position" => {
+                game = input_position(command);
+            },
+            "go" => {
+                let (a, b, prom) = compute(&game);
+                let bestmovea = convert_square_to_move(a);
+                let bestmoveb = convert_square_to_move(b);
+                match prom {
+                    Piece::NONE => {
+                        println!("bestmove {}{}", bestmovea, bestmoveb);
+                    },
+                    _ => {
+                        println!("bestmove {}{}q", bestmovea, bestmoveb);
+                    }
+                }
+            },
+            "perft" => {
+                let game = Game::default();
+                let mut i = 1;
+                loop {
+                    let now = Instant::now();
+                    println!("Perft <{i}> : {} {} milliseconde", perft(game, i), now.elapsed().as_millis());
+                    i+=1;
+                }
+            },
+            "stop" => {
+                break;
+            }
+            _ => {
 
-        if command[0] == "uci"  {
+            }
+        }
+        /*if command[0] == "uci"  {
             input_uci();
         }
         else if command[0] == "isready" {
@@ -35,7 +73,7 @@ pub fn uci () {
         }
         else if command[0] == "stop" {
             break;
-        }
+        }*/
     }
 }
 fn compute(game : &Game) -> (u64, u64, Piece) {
