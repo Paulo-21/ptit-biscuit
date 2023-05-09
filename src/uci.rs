@@ -6,6 +6,7 @@ use crate::perft::*;
 
 pub fn uci () {
     let mut game = Game::default();
+    println!("{}", 2&1);
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
@@ -100,7 +101,7 @@ fn input_uci() {
 fn input_ready() {
     println!("readyok");
 }
-fn input_position(mut commande : Vec<&str>) -> Game {
+fn input_position(commande : Vec<&str>) -> Game {
     
     if commande[1] == "startpos" {
         return get_bitboard_from_startpos(commande);
@@ -130,19 +131,6 @@ fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
             game.white_to_play ^= true;
         }
         else {
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
-            eprintln!("ERROR Startpos");
             eprintln!("ERROR Startpos");
             eprintln!("ERROR Startpos");
             eprintln!("ERROR Startpos");

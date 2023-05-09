@@ -745,7 +745,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let mut promote = 0;
                 let mut promote_piece = Piece::NONE;
                 let b = possi_wp.tzcnt();
-                if b & RANK_MASK[0] != 0 {
+                if b & RANK_MASK[7] != 0 {
                     promote = 1;
                     promote_piece = Piece::QUEEN;
                 }
@@ -755,7 +755,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 //let is_check = is_attacked_by_slider_w(&game1, k) &&  black_normal & k != 0;
                 let is_check = is_attacked(true, &game1);
                 if !is_check {
-                    if capture > 0{
+                    if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1) + promote, Piece::PAWN));
                     }
                     else {
@@ -893,7 +893,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let mut promote = 0;
                 let mut promote_piece = Piece::NONE;
                 let b = possi_bp.tzcnt();
-                if b & RANK_MASK[0] != 0 {
+                if b & RANK_MASK[0] == 1 {
                     promote = 1;
                     promote_piece = Piece::QUEEN;
                 }
@@ -926,7 +926,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let is_check = is_attacked(false, &game1);
                 if !is_check {
                     if capture > 0 {
-                    legal_moves.push_front(((piece <<9) + (b<<1), Piece::KNIGHT));
+                        legal_moves.push_front(((piece <<9) + (b<<1), Piece::KNIGHT));
                     }
                     else {
                         legal_moves.push_back(((piece <<9) + (b<<1), Piece::KNIGHT));
@@ -1031,7 +1031,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
 pub fn print_custum_move(a_move : (u64,Piece)) {
     let a = a_move.0>>9;
     let b = (a_move.0 & 510)>>1;
-    if a_move.0 & 1 != 0 {
+    if a_move.0 & 1 == 1 {
         println!("{}{}q {:?}", convert_square_to_move(a), convert_square_to_move(b), a_move.1);
     }
     else {
