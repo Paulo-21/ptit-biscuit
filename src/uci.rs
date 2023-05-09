@@ -44,7 +44,7 @@ fn compute(game : &Game) -> (u64, u64, Piece) {
     let depth = 5;
     eprintln!("Pronfondeur : {depth}");
     eprintln!("GAME STATE");
-    draw_the_game_state(game);
+    //draw_the_game_state(game);
     //compute_negamax(game)
     //let res = compute_alpha_beta_neg(game);
     //let res = compute_minimax(game);

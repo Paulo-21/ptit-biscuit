@@ -154,29 +154,29 @@ pub fn array_to_bitboard(chessboard : [[char;8]; 8], wp:&mut u64, wn:&mut u64, w
     }
 }
 pub fn draw_the_game_state(game : &Game) {
-    println!("WPAWN");
+    eprintln!("WPAWN");
     _draw_bitboard(game.wp);
-    println!("WKNIGHT");
+    eprintln!("WKNIGHT");
     _draw_bitboard(game.wn);
-    println!("WBISHOP");
+    eprintln!("WBISHOP");
     _draw_bitboard(game.wb);
-    println!("WROOK");
+    eprintln!("WROOK");
     _draw_bitboard(game.wr);
-    println!("WQUEEN");
+    eprintln!("WQUEEN");
     _draw_bitboard(game.wq);
-    println!("WKING");
+    eprintln!("WKING");
     _draw_bitboard(game.wk);
-    println!("BPAWN");
+    eprintln!("BPAWN");
     _draw_bitboard(game.bp);
-    println!("BKNIGHT");
+    eprintln!("BKNIGHT");
     _draw_bitboard(game.bn);
-    println!("BBISHOP");
+    eprintln!("BBISHOP");
     _draw_bitboard(game.bb);
-    println!("BROOK");
+    eprintln!("BROOK");
     _draw_bitboard(game.br);
-    println!("BQUEEN");
+    eprintln!("BQUEEN");
     _draw_bitboard(game.bq);
-    println!("BKING");
+    eprintln!("BKING");
     _draw_bitboard(game.bk);
 }
 pub fn get_game_from_basicpos() -> Game {
