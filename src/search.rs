@@ -6,6 +6,7 @@ pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, n
     *nb_node+=1;
     let legal_move = get_legal_move(game.white_to_play, game);
     if depth == 0 || legal_move.is_empty() {
+
         return eval(game, legal_move.len() as i32);
     };
     let mut value;

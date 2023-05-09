@@ -64,17 +64,20 @@ pub fn convert_square_to_move(a_move : u64) -> String{
 }
 
 static RANK_MASK : [u64;8] = [
-    255, 65280, 16711680, 4278190080, 1095216660480, 280375465082880, 71776119061217280, 18374686479671624000
+    0x00000000000000FF,
+    0x000000000000FF00,
+    0x0000000000FF0000, 
+    0x00000000FF000000,
+    0x000000FF00000000,
+    0x0000FF0000000000,
+    0x00FF000000000000,
+    0xFF00000000000000
 ];
 static FILE_MASKS : [u64;8] = [
     0x101010101010101, 0x202020202020202, 0x404040404040404, 0x808080808080808,
     0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080
 ];
-/*
-static FILE_MASKS : [u64;8] = [
-    72340172838076670, 144680345676153340, 289360691352306700, 578721382704613400,
-    1157442765409226800, 2314885530818453500, 4629771061636907000, 9259542123273814000
-];*/
+
 static DIAG_MASKS : [u64;15] = [
     0x1, 0x102, 0x10204, 0x1020408, 0x102040810, 0x10204081020, 0x1020408102040,
 	0x102040810204080, 0x204081020408000, 0x408102040800000, 0x810204080000000,
@@ -734,7 +737,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     if side_w { //White Possibility
         //Pions Possibility
         //let black_normal = attack_normal_piece_b(&game, black);
-        let k = game.wk.tzcnt();
+        //let k = game.wk.tzcnt();
         let mut wp_test = game.wp;
         while  wp_test != 0 {
             let piece = wp_test.tzcnt();
@@ -745,7 +748,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let mut promote = 0;
                 let mut promote_piece = Piece::NONE;
                 let b = possi_wp.tzcnt();
-                if b & RANK_MASK[7] != 0 {
+                //println!("hello white {} {} {}", b, RANK_MASK[0] ,b & RANK_MASK[0]);
+                if 1<<b & RANK_MASK[7] != 0 {
                     promote = 1;
                     promote_piece = Piece::QUEEN;
                 }
@@ -893,7 +897,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let mut promote = 0;
                 let mut promote_piece = Piece::NONE;
                 let b = possi_bp.tzcnt();
-                if b & RANK_MASK[0] == 1 {
+                if 1<<b & RANK_MASK[0] != 0 {
+                    //println!("hello black {} {} {}", b, RANK_MASK[0] ,b & RANK_MASK[0]);
                     promote = 1;
                     promote_piece = Piece::QUEEN;
                 }

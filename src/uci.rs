@@ -6,7 +6,6 @@ use crate::perft::*;
 
 pub fn uci () {
     let mut game = Game::default();
-    println!("{}", 2&1);
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();

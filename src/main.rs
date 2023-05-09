@@ -1,19 +1,18 @@
-use std::io;
 mod chess;
 mod eval;
 mod uci;
 mod search;
 use uci::*;
-use crate::{chess::*, table_transposition::TranspositionTable};
+//use crate::{chess::*, table_transposition::TranspositionTable};
 use std::env;
 mod perft;
-use perft::*;
+//use perft::*;
 mod table_transposition;
 
-use std::time::Instant;
+//use std::time::Instant;
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
-    println!("P'TIT BISCUIT");
+    eprintln!("P'TIT BISCUIT");
     uci();
     /*loop {
         //print!(">");
