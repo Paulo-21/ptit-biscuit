@@ -155,7 +155,7 @@ fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
     eprintln!("MINIMAX");
     let mut nb_node = 0u64;
     let maximizing_player = game.white_to_play;
-    println!("{maximizing_player}");
+    eprintln!("{maximizing_player}");
     let legal_moves = get_legal_move(game.white_to_play, game);
     eprintln!("info : {:?}", legal_moves);
     let mut score = if maximizing_player { i32::MIN } else { i32::MAX };
@@ -185,7 +185,7 @@ fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
     eprintln!();
     let a = bestmove >> 8;
     let b = bestmove & 255;
-    println!("NB nodes : {nb_node}");
+    eprintln!("NB nodes : {nb_node}");
     (a,b)
 }
 
@@ -226,12 +226,12 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     (a,b, prom)
 }
 fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
-    println!("PRINCIPAL VARIATION SEARCH");
+    eprintln!("PRINCIPAL VARIATION SEARCH");
     let alpha = i32::MIN<<1;
     let beta = i32::MAX>>1;
     let mut nb_node = 0u64;
     let legal_moves = get_legal_move(game.white_to_play, game);
-    println!("info : {:?}", legal_moves);
+    eprintln!("info : {:?}", legal_moves);
     let mut score = if game.white_to_play { i32::MIN } else { i32::MAX };
     let mut bestmove = (0u64, Piece::NONE);
     if !legal_moves.is_empty() {
@@ -252,7 +252,7 @@ fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     }
     eprintln!();
     let (a, b, prom) = convert_custum_move(bestmove);
-    println!("NB nodes : {nb_node}");
+    eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
 }
 
