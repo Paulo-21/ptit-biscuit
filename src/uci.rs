@@ -43,7 +43,7 @@ pub fn uci () {
                 }
             },
             "stop" => {
-                break;
+                //break;
             }
             _ => {
 
