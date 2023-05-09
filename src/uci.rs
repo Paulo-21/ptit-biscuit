@@ -112,13 +112,13 @@ fn input_position(mut commande : Vec<&str>) -> Game {
     }
 }
 fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
-    let move_tab = command.iter().skip(2);
+    let move_tab = command.iter().skip(3);
     let mut game = get_game_from_basicpos();
     if move_tab.len() <= 0 {
         return game;
     }
     for one_move in move_tab {
-        println!("{}", one_move);
+        //println!("{}", one_move);
         let (a,b, prom) = convert_move_to_bitboard(one_move);
         let reponse = if game.white_to_play {
             compute_move_w((a, b, prom), &mut game)
@@ -130,22 +130,22 @@ fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
             game.white_to_play ^= true;
         }
         else {
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
-            println!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
+            eprintln!("ERROR Startpos");
         }
     }
     game
