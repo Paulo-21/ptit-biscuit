@@ -52,31 +52,6 @@ pub fn uci () {
 
             }
         }
-        /*if command[0] == "uci"  {
-            input_uci();
-        }
-        else if command[0] == "isready" {
-            input_ready();
-        }
-        else if command[0] == "position" {
-            game = input_position(command);
-        }
-        else if command[0] == "go" {
-            let (a, b, prom) = compute(&game);
-            let bestmovea = convert_square_to_move(a);
-            let bestmoveb = convert_square_to_move(b);
-            match prom {
-                Piece::NONE => {
-                    println!("bestmove {}{}", bestmovea, bestmoveb);
-                },
-                _ => {
-                    println!("bestmove {}{}q", bestmovea, bestmoveb);
-                }
-            }
-        }
-        else if command[0] == "stop" {
-            break;
-        }*/
     }
 }
 fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
