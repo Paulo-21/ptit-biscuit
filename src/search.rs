@@ -204,6 +204,36 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i3
 
     value
 }
+pub fn mtd_f(game : &mut Game, mut f : i32, depth : i8, tt : &mut TranspositionTable, nb_node : &mut u64) -> i32 {
+    let mut g = f;
+    let mut upperbound = i32::MAX;
+    let mut lowerbound = i32::MIN;
+
+    loop  {
+        let beta = if g == lowerbound {
+            g + 1
+        } else {
+            g
+        };
+        g = alpha_beta_neg_tt(game, depth, beta - 1, beta, tt , nb_node);
+        if g < beta { upperbound = g } else { lowerbound = g};
+        if !(lowerbound >= upperbound) {
+            break;
+        }
+    }
+    g
+}
+fn iterative_deepening_mtd_f(root : &mut Game) -> i32 {
+
+    let mut firstguess = 0;
+    for d in 1..7 {
+        //firstguess = mtd_f(root, firstguess, d);
+        //if times_up() 
+        { break; }
+    }
+    return firstguess;
+}
+
 /*
 pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
