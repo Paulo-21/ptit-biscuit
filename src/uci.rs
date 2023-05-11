@@ -270,7 +270,7 @@ fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTa
     }
     eprintln!();
     let (a, b, prom ) = convert_custum_move(bestmove);
-    println!("NB nodes : {nb_node}");
+    eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
 }
 
