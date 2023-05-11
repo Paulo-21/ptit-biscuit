@@ -1,6 +1,10 @@
 use lazy_static::lazy_static;
 use bitintr::{ Tzcnt };//, Lzcnt, Andn};
 use std::collections::VecDeque;
+use crate::zobrist::*;
+
+
+use crate::table_transposition::TranspositionTable;
 
 static BASICSTART_CHESS_BOARD:[[char;8];8] = [
     ['r','n','b','q','k','b','n','r'],
@@ -28,13 +32,14 @@ pub struct Game {
     pub wp : u64, pub wn : u64, pub wb : u64, pub wr : u64, pub wq : u64, pub wk : u64,
     pub bp : u64, pub bn : u64, pub bb : u64, pub br : u64, pub bq : u64, pub bk : u64,
     pub white_to_play : bool,
-    wking_rook_never_move : bool,
-    wqueen_rook_never_move : bool,
-    wking_never_move : bool,
-    bking_rook_never_move : bool,
-    bqueen_rook_never_move : bool,
-    bking_never_move : bool,
+    pub wking_rook_never_move : bool,
+    pub wqueen_rook_never_move : bool,
+    pub wking_never_move : bool,
+    pub bking_rook_never_move : bool,
+    pub bqueen_rook_never_move : bool,
+    pub bking_never_move : bool,
     pub nb_coups : u16,
+    pub hash : u64,
 }
 impl Game {
     pub fn occupied(&self) -> u64 {
@@ -112,7 +117,6 @@ lazy_static! {
                 }
             }
         }
-
         first_rank_attacks
     };
 
@@ -130,6 +134,7 @@ lazy_static! {
         }
         knight_moves
     };
+    
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -198,14 +203,17 @@ pub fn get_game_from_basicpos() -> Game {
 
     array_to_bitboard(BASICSTART_CHESS_BOARD, &mut wp, &mut wn, &mut wb, &mut wr, &mut wq, &mut wk, &mut bp, &mut bn, &mut bb, &mut br, &mut bq, &mut bk);
     
-    Game {
+    let mut game = Game {
         wp, wn, wb, wr, wq, wk,
         bp, bn, bb, br, bq, bk,
         white_to_play : true,
         wking_never_move : true, wqueen_rook_never_move : true, wking_rook_never_move : true,
         bking_never_move : true, bqueen_rook_never_move : true, bking_rook_never_move : true,
         nb_coups : 0,
-    }
+        hash : 0
+    };
+    game.hash = init_zobrist_key(&game);
+    game
 }
 pub fn _draw_bitboard(bitboard : u64) {
     let mut i = 0;
@@ -479,7 +487,266 @@ pub fn compute_move_w(chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
         -1
     }
 }
+pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
+    let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
+    let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
+    let occupied = black | white;
+    let mut a = chessmove.0;
+    let mut b = chessmove.1;
+    let square_a = a;
+    let square_b = b;
+    a = 1u64<<a;
+    b = 1u64<<b;
+    let mut moves= 0;
+    let mut from: &mut u64 = &mut 0;
+    game.hash ^= *SIDETOMOVE;
+    if (game.wp & a) != 0 {
+        //println!("old : {} {}", game.hash, PIECE_SQUARE[0][square_a as usize]);
+        game.hash ^= PIECE_SQUARE[0][square_a as usize];
+        game.hash ^= PIECE_SQUARE[0][square_b as usize];
+        //println!("new : {} {}", game.hash, PIECE_SQUARE[0][square_b as usize]);
+        moves = possibility_wp(a, !occupied, black);
+        if moves & b != 0 && b & RANK_MASK[7] != 0 {
+            game.wp &= !a;
+            match chessmove.2 {
+                Piece::QUEEN  => game.wq |= b,
+                Piece::ROOK   => game.wr |= b,
+                Piece::BISHOP => game.wb |= b,
+                Piece::KNIGHT => game.wn |= b,
+                _ => { game.wp |= b; }
+            }
+            if black & b != 0 {
+                if game.bp & b != 0 {  game.bp &= !b; return 1;}
+                else if game.bn & b != 0 { game.bn &= !b; return 3;}
+                else if game.bb & b != 0 { game.bb &= !b; return 3;}
+                else if game.br & b != 0 { game.br &= !b; return 5;}
+                else if game.bq & b != 0 { game.bq &= !b; return 11;}
+            }
+            return 1;
+        }
+        from = &mut game.wp;
+    }
+    else if game.wn & a != 0 {
+        game.hash ^= PIECE_SQUARE[1][square_a as usize];
+        game.hash ^= PIECE_SQUARE[1][square_b as usize];
+        //moves = possibility_n(game.wn & a) & !white;
+        moves = KNIGHT_MOVE[square_a as usize] & !white;
+        from = &mut game.wn;
+    }
+    else if game.wb & a != 0 {
+        game.hash ^= PIECE_SQUARE[2][square_a as usize];
+        game.hash ^= PIECE_SQUARE[2][square_b as usize];
+        let occupied = black | white;
+        moves = diag_antid_moves(square_a, occupied) & !white;
+        from = &mut game.wb;
+    }
+    else if game.wr & a != 0 {
+        game.hash ^= PIECE_SQUARE[3][square_a as usize];
+        game.hash ^= PIECE_SQUARE[3][square_b as usize];
+        let occupied = black | white;
+        moves = hv_moves(square_a, occupied) & !white;
+        from = &mut game.wr;
+        if moves & b != 0 {
+            game.wking_rook_never_move = false;
+        }
+    }
+    else if game.wq & a != 0 {
+        game.hash ^= PIECE_SQUARE[4][square_a as usize];
+        game.hash ^= PIECE_SQUARE[4][square_b as usize];
+        let occupied = black | white;
+        moves = (hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied)) & !white;
+        
+        from = &mut game.wq;
+    }
+    else if game.wk & a != 0 {
+        game.hash ^= PIECE_SQUARE[5][square_a as usize];
+        game.hash ^= PIECE_SQUARE[5][square_b as usize];
+        //println!("{square_b} {} {} {}", game.wking_never_move, game.wking_rook_never_move, game.wqueen_rook_never_move);
+        if square_b == 2 && square_a == 4 { // Grand roque
+            //check if the king and the rook has never move
+            if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(1) + 2u64.pow(2)) == 0 && possibility_b(game) & (2u64.pow(1) + 2u64.pow(2)) == 0 {
+                game.wking_never_move = false;
+                game.wking_rook_never_move = false;
+                //Do grand roque
+                game.wk &= !a;
+                game.wk |= b;
+                game.wr &= !(2u64.pow(0));
+                game.wr |= 2u64.pow(3);
+                return 0;
+            }
+            return -1;
+            //check if no piece is between
+            //check if square between isn't attacked
+        }
+        else if square_b == 6  && square_a == 4 { //Petit Roque
+            if game.wking_never_move && game.wqueen_rook_never_move && (black | white) & (2u64.pow(6) + 2u64.pow(5)) == 0 && possibility_b(game) & (2u64.pow(6) + 2u64.pow(5)) == 0 {
+                game.wking_never_move = false;
+                game.wqueen_rook_never_move = false;
+                game.wk &= !a;
+                game.wk |= b;
+                game.wr &= !(2u64.pow(7));
+                game.wr |= 2u64.pow(5);
+                return 0;
+            }
+            return -1;
+        }
+        moves = KING_MOVE[square_a as usize] & !white;
+        //moves = possibility_k(game.wk) & !white;
+        from = &mut game.wk;
+        if moves & b != 0 {
+            game.wking_never_move = false;
+        }
+    }
+    if moves & b != 0 {
+        (*from) &= !a;
+        (*from) |= b;
+        if black & b != 0 {
+            if game.bp & b != 0 {
+                game.hash ^= PIECE_SQUARE[6][square_b as usize]; 
+                game.bp &= !b; return 1;
+            }
+            else if game.bn & b != 0 { 
+                game.hash ^= PIECE_SQUARE[7][square_b as usize];
+                game.bn &= !b; return 3;}
+            else if game.bb & b != 0 { 
+                game.hash ^= PIECE_SQUARE[8][square_b as usize];
+                game.bb &= !b; return 3;}
+            else if game.br & b != 0 { 
+                game.hash ^= PIECE_SQUARE[9][square_b as usize];
+                game.br &= !b; return 5;}
+            else if game.bq & b != 0 { 
+                game.hash ^= PIECE_SQUARE[10][square_b as usize];
+                game.bq &= !b; return 11;}
+        }
+        0
+    }
+    else {
+        -1
+    }
+}
 
+pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
+    let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
+    let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
+    let mut a = chessmove.0;
+    let mut b = chessmove.1;
+    let square_a = a;
+    let square_b = b;
+    a = 1<<a;
+    b = 1<<b;
+    game.hash ^= *SIDETOMOVE;
+    let mut moves = 0;
+    let mut from = &mut (0);
+    if (game.bp & a) != 0 {
+        game.hash ^= PIECE_SQUARE[6][square_a as usize];
+        game.hash ^= PIECE_SQUARE[6][square_b as usize];
+        moves = possibility_bp2(a, !(black | white), white);
+        if moves & b != 0 && b & RANK_MASK[0] != 0 {
+            game.bp &= !(1u64<<square_a);
+            match chessmove.2 {
+                Piece::QUEEN  => game.bq |= 1u64<<square_b,
+                Piece::ROOK   => game.br |= 1u64<<square_b,
+                Piece::BISHOP => game.bb |= 1u64<<square_b,
+                Piece::KNIGHT => game.bn |= 1u64<<square_b,
+                _ => { game.bp |= 1u64<<square_b; }
+            }
+            if white & b != 0 {
+                if game.wp & b != 0 { game.wp &= !b; return 1;}
+                else if game.wn & b != 0 { game.wn &= !b; return 3;}
+                else if game.wb & b != 0 { game.wb &= !b; return 3;}
+                else if game.wr & b != 0 { game.wr &= !b; return 5;}
+                else if game.wq & b != 0 { game.wq &= !b; return 11;}
+            }
+            return 1;
+        }
+        from = &mut game.bp;
+    }
+    else if game.bn & a != 0 {
+        game.hash ^= PIECE_SQUARE[7][square_a as usize];
+        game.hash ^= PIECE_SQUARE[7][square_b as usize];
+        //moves = possibility_n( a) & !black;
+        moves = KNIGHT_MOVE[square_a as usize] & !black;
+        from = &mut game.bn;
+    }
+    else if game.bb & a != 0 {
+        game.hash ^= PIECE_SQUARE[8][square_a as usize];
+        game.hash ^= PIECE_SQUARE[8][square_b as usize];
+        let occupied = black | white;
+        moves = diag_antid_moves(square_a, occupied) & !black;
+        from = &mut game.bb;
+    }
+    else if game.br & a != 0 {
+        game.hash ^= PIECE_SQUARE[9][square_a as usize];
+        game.hash ^= PIECE_SQUARE[9][square_b as usize];
+        let occupied = black | white;
+        moves = hv_moves(square_a, occupied) & !black;
+        from = &mut game.br;
+    }
+    else if game.bq & a != 0 {
+        game.hash ^= PIECE_SQUARE[10][square_a as usize];
+        game.hash ^= PIECE_SQUARE[10][square_b as usize];
+        let occupied = black | white;
+        moves = (hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied)) & !black;
+        from = &mut game.bq;
+    }
+    else if game.bk & a != 0 {
+        game.hash ^= PIECE_SQUARE[11][square_a as usize];
+        game.hash ^= PIECE_SQUARE[11][square_b as usize];
+        if square_a == 60 && square_b == 58 && game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
+                //println!("Grand roque");
+                game.bking_never_move = false;
+                game.bking_rook_never_move = false;
+                //Do grand roque
+                game.bk &= !a;
+                game.bk |= b;
+                game.br &= !(2u64.pow(56));
+                game.br |= 2u64.pow(59);
+                return 0;
+        }
+            //check if no piece is between
+            //check if square between isn't attacked
+        
+        else if square_a == 60 && square_b == 62  && game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+                game.bking_never_move = false;
+                game.bqueen_rook_never_move = false;
+                game.bk &= !a;
+                game.bk |= b;
+                game.br &= !(2u64.pow(63));
+                game.br |= 2u64.pow(61);
+                return 0;
+            
+        }
+        moves = KING_MOVE[square_a as usize] & !black;
+        //moves = possibility_k(game.bk) & !black;
+        from = &mut game.bk;
+        if moves & b != 0 {
+            game.bking_never_move = false;
+        }
+    }
+    if moves & b != 0 {
+        (*from) &= !a;
+        (*from) |=  b;
+        if white & b != 0 {
+            if game.wp & b != 0 {
+                game.hash ^= PIECE_SQUARE[0][square_b as usize];
+                game.wp &= !b; return 1;}
+            else if game.wn & b != 0 { 
+                game.hash ^= PIECE_SQUARE[1][square_b as usize];
+                game.wn &= !b; return 3;}
+            else if game.wb & b != 0 { 
+                game.hash ^= PIECE_SQUARE[2][square_b as usize];
+                game.wb &= !b; return 3;}
+            else if game.wr & b != 0 { 
+                game.hash ^= PIECE_SQUARE[3][square_b as usize];
+                game.wr &= !b; return 5;}
+            else if game.wq & b != 0 {
+                game.hash ^= PIECE_SQUARE[4][square_b as usize];
+                game.wq &= !b; return 11;}
+        }
+        0
+    }
+    else { -1 }
+}
 pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
     let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;

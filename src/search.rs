@@ -1,5 +1,8 @@
 use crate::chess::*;
 use crate::eval::*;
+use crate::table_transposition::Transposition;
+use crate::table_transposition::TranspositionTable;
+use crate::table_transposition::node_type;
 use std::cmp::{ max, min };
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
@@ -141,6 +144,64 @@ pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, 
             break;
         }
     }
+    value
+}
+
+pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64) -> i32 {
+    *nb_node+=1;
+    let alpha_orgi = alpha;
+    /* TT look up */
+
+    let mut tt_entry = tt.get(game.hash);
+    if tt_entry.hash == game.hash && tt_entry.depth >= depth {
+        /*println!("Hello");
+        println!("{}, {}", tt_entry.hash, game.hash);*/
+        match tt_entry.node_type {
+            node_type::PV =>  return tt_entry.eval,
+            node_type::ALL => alpha = max(alpha, tt_entry.eval),
+            node_type::CUT => beta = min(beta, tt_entry.eval)
+        }
+        if alpha >= beta {
+            return tt_entry.eval;
+        }
+    }
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    if depth == 0 || legal_moves.is_empty() {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return eval;
+    };
+    let mut value = i32::MIN>>1;
+    for moveto_play in legal_moves {
+        let (a,b, prom) = convert_custum_move(moveto_play);
+
+        let mut game1 = *game;
+
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        value = max(value, -alpha_beta_neg_tt(&mut game1, depth-1, -beta, -alpha, tt, nb_node));
+        alpha = max(alpha, value);
+        if alpha >= beta {
+            break;
+        }
+    }
+
+    tt_entry.eval = value;
+    if value <= alpha_orgi {
+        tt_entry.node_type = node_type::CUT;
+    }
+    else if value >= beta {
+        tt_entry.node_type = node_type::ALL;
+    }
+    else {
+        tt_entry.node_type = node_type::PV;
+    }
+    tt_entry.depth = depth;
+    tt.set(game.hash, depth, value, 0, tt_entry.node_type);
+
     value
 }
 /*

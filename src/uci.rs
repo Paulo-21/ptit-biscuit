@@ -1,11 +1,13 @@
 use std::io;
 use crate::chess::*;
 use crate::search::*;
+use crate::table_transposition::TranspositionTable;
 use std::time::Instant;
 use crate::perft::*;
 
 pub fn uci () {
     let mut game = Game::default();
+    let mut tt = TranspositionTable::with_memory(8<<24);
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
@@ -21,7 +23,8 @@ pub fn uci () {
                 game = input_position(command);
             },
             "go" => {
-                let (a, b, prom) = compute(&game);
+                tt = TranspositionTable::with_memory(8<<24);
+                let (a, b, prom) = compute(&game, &mut tt);
                 let bestmovea = convert_square_to_move(a);
                 let bestmoveb = convert_square_to_move(b);
                 match prom {
@@ -76,7 +79,7 @@ pub fn uci () {
         }*/
     }
 }
-fn compute(game : &Game) -> (u64, u64, Piece) {
+fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("START Compute");
     let now = Instant::now();
     let depth = 6;
@@ -84,7 +87,8 @@ fn compute(game : &Game) -> (u64, u64, Piece) {
     eprintln!("GAME STATE");
     //draw_the_game_state(game);
     //compute_negamax(game)
-    let res = compute_alpha_beta_neg(game, depth);
+    //let res = compute_alpha_beta_neg(game, depth);
+    let res = compute_alpha_beta_neg_tt(game, depth, tt);
     //let res = compute_minimax(game);
     //let res = compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth );
@@ -212,6 +216,64 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
 }
+
+fn compute_alpha_beta_neg(game : &Game, depth : i8) -> (u64, u64, Piece) {
+    eprintln!("NEGAMAX");
+    let mut nb_node = 0u64;
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    eprintln!("info : {:?}", legal_moves);
+    let mut score = i32::MIN>>1;
+    let mut bestmove = (0u64, Piece::NONE);
+    
+    for moveto in legal_moves {
+        let mut game1 = *game;
+        let (a, b, prom) = convert_custum_move(moveto);
+        if game.white_to_play { compute_move_w((a, b, prom), &mut game1); }
+        else { compute_move_b((a, b, prom), &mut game1); }
+        game1.white_to_play ^= true;
+
+        let move_score = (-1)*alpha_beta_neg(&mut game1, depth-1, i32::MIN>>1, i32::MAX>>1, &mut nb_node);
+        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        
+        if move_score > score {
+            score = move_score;
+            bestmove = moveto;
+        }
+    }
+    eprintln!();
+    let (a, b, prom ) = convert_custum_move(bestmove);
+    println!("NB nodes : {nb_node}");
+    (a,b, prom)
+}
+fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+    eprintln!("NEGAMAX TT");
+    let mut nb_node = 0u64;
+    let legal_moves = get_legal_move(game.white_to_play, game);
+    eprintln!("info : {:?}", legal_moves);
+    let mut score = i32::MIN>>1;
+    let mut bestmove = (0u64, Piece::NONE);
+    
+    for moveto in legal_moves {
+        let mut game1 = *game;
+        let (a, b, prom) = convert_custum_move(moveto);
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play ^= true;
+
+        let move_score = (-1)*alpha_beta_neg_tt(&mut game1, depth-1, i32::MIN>>1, i32::MAX>>1, tt, &mut nb_node);
+        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
+        
+        if move_score > score {
+            score = move_score;
+            bestmove = moveto;
+        }
+    }
+    eprintln!();
+    let (a, b, prom ) = convert_custum_move(bestmove);
+    println!("NB nodes : {nb_node}");
+    (a,b, prom)
+}
+
 /*fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     eprintln!("PRINCIPAL VARIATION SEARCH");
     let alpha = i32::MIN<<1;
@@ -246,65 +308,4 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
 
 /*fn get_bitboard_from_fen(_command : &str) -> Game {
     
-}*/
-
-fn compute_alpha_beta_neg(game : &Game, depth : i8) -> (u64, u64, Piece) {
-    eprintln!("NEGAMAX");
-    let mut nb_node = 0u64;
-    let legal_moves = get_legal_move(game.white_to_play, game);
-    eprintln!("info : {:?}", legal_moves);
-    let mut score = i32::MIN>>1;
-    let mut bestmove = (0u64, Piece::NONE);
-    
-    for moveto in legal_moves {
-        let mut game1 = *game;
-        let (a, b, prom) = convert_custum_move(moveto);
-        if game.white_to_play { compute_move_w((a, b, prom), &mut game1); }
-        else { compute_move_b((a, b, prom), &mut game1); }
-        game1.white_to_play ^= true;
-
-        let move_score = (-1)*alpha_beta_neg(&mut game1, depth-1, i32::MIN>>1, i32::MAX>>1, &mut nb_node);
-        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
-        
-        if move_score > score {
-            score = move_score;
-            bestmove = moveto;
-        }
-    }
-    eprintln!();
-    let (a, b, prom ) = convert_custum_move(bestmove);
-    println!("NB nodes : {nb_node}");
-    (a,b, prom)
-}
-/*fn compute_negamax(game : &Game, depth : i8) -> (u64 , u64) {
-    println!("NEGAMAX");
-    let mut nb_node = 0u64;
-    let legal_moves = get_legal_move(game.white_to_play, game);
-    println!("info : {:?}", legal_moves);
-    let mut score = i32::MIN;
-    let mut bestmove = 0u64;
-    if !legal_moves.is_empty() {
-        bestmove = legal_moves.get(0).unwrap().0;
-    }
-    for moveto in legal_moves {
-        let mut game1 = *game;
-        let a = moveto.0>>8;
-        let b = moveto.0 & 255;
-        if game.white_to_play { compute_move_w(a, b, &mut game1); }
-        else { compute_move_b(a, b, &mut game1); }
-        game1.white_to_play ^= true;
-
-        let move_score = (-1)*negamax(&mut game1, depth-1, game.white_to_play^true, &mut nb_node);
-        eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
-        
-        if move_score > score {
-            score = move_score;
-            bestmove = moveto.0;
-        }
-    }
-    eprintln!();
-    let a = bestmove >> 8;
-    let b = bestmove & 255;
-    println!("NB nodes : {nb_node}");
-    (a,b)
 }*/

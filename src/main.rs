@@ -8,6 +8,7 @@ use std::env;
 mod perft;
 //use perft::*;
 mod table_transposition;
+mod zobrist;
 
 //use std::time::Instant;
 fn main() {
