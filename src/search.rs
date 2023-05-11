@@ -111,35 +111,39 @@ pub fn pvs(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node 
     alpha
 }
 
-/*
-pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32) -> i32 {
+
+pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
-    if depth == 0 || legal_moves.len() == 0 {
+    *nb_node+=1;
+    if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
         if !game.white_to_play {
             eval *= -1;
         };
         return eval;
     };
-    let mut value = i32::MIN;
+    let mut value = i32::MIN>>1;
     for moveto_play in legal_moves {
         let (a,b, prom) = convert_custum_move(moveto_play);
 
         let mut game1 = *game;
 
-        if game.white_to_play { compute_move_w((a, b, Piece::NONE), &mut game1); }
-        else { compute_move_b((a, b, Piece::NONE), &mut game1); }
+        if game.white_to_play { compute_move_w((a, b, prom), &mut game1); }
+        else { compute_move_b((a, b, prom), &mut game1); }
         game1.white_to_play^=true;
         
-        value = max(value, alpha_beta_neg(&mut game1, depth-1, -beta, -alpha)*(-1i32));
-        if value >= beta {
+        value = max(value, -alpha_beta_neg(&mut game1, depth-1, -beta, -alpha, nb_node));
+        /*if value >= beta {
             return value;
+        }*/
+        alpha = max(alpha, value);
+        if alpha >= beta {
+            break;
         }
-        alpha = max(alpha, value)
     }
     value
 }
-
+/*
 pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
