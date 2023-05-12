@@ -7,7 +7,7 @@ use crate::perft::*;
 
 pub fn uci () {
     let mut game = Game::default();
-    let mut tt = TranspositionTable::with_memory(8<<24);
+    let mut tt = TranspositionTable::with_memory(8<<25);
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
@@ -23,7 +23,7 @@ pub fn uci () {
                 game = input_position(command);
             },
             "go" => {
-                tt = TranspositionTable::with_memory(8<<24);
+                tt = TranspositionTable::with_memory(8<<25);
                 let (a, b, prom) = compute(&game, &mut tt);
                 let bestmovea = convert_square_to_move(a);
                 let bestmoveb = convert_square_to_move(b);
@@ -59,7 +59,6 @@ fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     let now = Instant::now();
     let depth = 6;
     eprintln!("Pronfondeur : {depth}");
-    eprintln!("GAME STATE");
     //draw_the_game_state(game);
     //compute_negamax(game)
     //let res = compute_alpha_beta_neg(game, depth);
@@ -67,6 +66,7 @@ fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     //let res = compute_minimax(game);
     //let res = compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth );
+    //let res = compute_mdt_f_iter(game, depth, tt);
 
     eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());
     res
@@ -249,6 +249,22 @@ fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTa
     (a,b, prom)
 }
 
+
+fn compute_mdt_f_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+    eprintln!("MTD-F");
+    let mut nb_node : u64 = 0;
+    let (mut firstguess, mut bmove) = (0,0);
+    for d in 1..depth {
+        (firstguess, bmove) = mtd_f(game, firstguess, d, tt, &mut nb_node);
+        let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
+        let out = convert_move_to_str(a, b, p);
+        eprintln!(" depth : {}, current : {}, eval : {}", d , out, firstguess);
+        //if times_up()
+        //{ break; }
+    }
+    let res = convert_custum_move((bmove, Piece::QUEEN));
+    return res;
+}
 /*fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     eprintln!("PRINCIPAL VARIATION SEARCH");
     let alpha = i32::MIN<<1;

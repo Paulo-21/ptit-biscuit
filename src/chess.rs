@@ -162,6 +162,7 @@ pub fn array_to_bitboard(chessboard : [[char;8]; 8], wp:&mut u64, wn:&mut u64, w
     }
 }
 pub fn draw_the_game_state(game : &Game) {
+    eprintln!("GAME STATE");
     eprintln!("WPAWN");
     _draw_bitboard(game.wp);
     eprintln!("WKNIGHT");
@@ -216,6 +217,7 @@ pub fn get_game_from_basicpos() -> Game {
     game
 }
 pub fn _draw_bitboard(bitboard : u64) {
+    println!();
     let mut i = 0;
     for _k in 0..8 {
         println!();
@@ -1535,4 +1537,22 @@ pub fn convert_custum_move(the_move : (u64, Piece)) -> (u64, u64, Piece) {
         _ => { Piece::NONE }
     };
     (a, b, c)
+}
+
+pub fn convert_move_to_str(a:u64, b:u64, p : Piece) -> String {
+    let mut a = convert_square_to_move(a);
+    let b = convert_square_to_move(b);
+    a.push_str( &*b);
+    match p {
+        Piece::QUEEN => {
+            a.push('q');
+        },
+        _ => {}
+    }
+    a
+}
+
+pub fn convert_custum_to_str(moveto: u64) -> String {
+    let (a,b,p) = convert_custum_move((moveto, Piece::QUEEN));
+    convert_move_to_str(a, b, p)
 }

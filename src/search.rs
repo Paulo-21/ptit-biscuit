@@ -1,9 +1,10 @@
 use crate::chess::*;
 use crate::eval::*;
-use crate::table_transposition::Transposition;
+//use crate::table_transposition::Transposition;
 use crate::table_transposition::TranspositionTable;
 use crate::table_transposition::node_type;
 use std::cmp::{ max, min };
+use crate::uci::*;
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
@@ -204,35 +205,114 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i3
 
     value
 }
-pub fn mtd_f(game : &mut Game, mut f : i32, depth : i8, tt : &mut TranspositionTable, nb_node : &mut u64) -> i32 {
-    let mut g = f;
+pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64) -> (i32, u64) {
+    *nb_node+=1;
+    let alpha_orgi = alpha;
+    /* TT look up */
+    let mut best_move = 0u64;
+    let mut tt_entry = tt.get(game.hash);
+    if tt_entry.hash == game.hash {
+        
+        if tt_entry.depth >= depth {
+            match tt_entry.node_type {
+            node_type::PV =>  return (tt_entry.eval, tt_entry.bestmove),
+            node_type::ALL => alpha = max(alpha, tt_entry.eval),
+            node_type::CUT => beta = min(beta, tt_entry.eval)
+            }
+            if alpha >= beta {
+                return (tt_entry.eval, tt_entry.bestmove);
+            }
+        }
+        /*else {
+            match tt_entry.node_type {
+                node_type::PV => {
+                    best_move = tt_entry.bestmove;
+                    println!("BEST");
+                },
+                _ => {
+
+                }
+            }
+        }*/
+        
+    }
+    
+    
+    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    if depth == 0 || legal_moves.is_empty() {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return (eval,0);
+    };
+    let mut value = i32::MIN>>1;
+    /*if best_move != 0 {
+        //let s = convert_custum_to_str(best_move);
+        legal_moves.push_front((best_move,Piece::NONE))
+    }*/
+    for moveto_play in legal_moves {
+        let (a,b, prom) = convert_custum_move(moveto_play);
+
+        let mut game1 = *game;
+
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (score, _bMove) = alpha_beta_neg_tt_best(&mut game1, depth-1, -beta, -alpha, tt, nb_node);
+        if value < -score {
+            value = -score;
+            best_move = moveto_play.0;
+            /*let (a, b, p, ) = convert_custum_move((best_move, Piece::QUEEN));
+            let s = convert_move_to_str(a, b, p);
+
+            println!("good move : {}", s);*/
+        }
+        alpha = max(alpha, value);
+        //value = max(value, );
+        if alpha >= beta {
+            break;
+        }
+    }
+
+    tt_entry.eval = value;
+    if value <= alpha_orgi {
+        tt_entry.node_type = node_type::CUT;
+    }
+    else if value >= beta {
+        tt_entry.node_type = node_type::ALL;
+    }
+    else {
+        tt_entry.node_type = node_type::PV;
+    }
+    tt_entry.depth = depth;
+    tt.set(game.hash, depth, value, best_move, tt_entry.node_type);
+    //eprintln!("{}", convert_custum_to_str(best_move));
+    (value, best_move) 
+}
+pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb_node : &mut u64) -> (i32, u64) {
+    //eprintln!("MTD-F inside {} {}", depth, f);
+    let (mut g, mut bmove) = (f,0);
+    //let bmove = 0;
     let mut upperbound = i32::MAX;
     let mut lowerbound = i32::MIN;
-
+    //let beta = 9999;
     loop  {
         let beta = if g == lowerbound {
             g + 1
         } else {
             g
         };
-        g = alpha_beta_neg_tt(game, depth, beta - 1, beta, tt , nb_node);
+        (g, bmove) = alpha_beta_neg_tt_best(game, depth, beta-1, beta, tt , nb_node);
+        //eprintln!("{}", convert_custum_to_str(bmove));
         if g < beta { upperbound = g } else { lowerbound = g};
-        if !(lowerbound >= upperbound) {
+        if lowerbound >= upperbound {
             break;
         }
     }
-    g
+    (g, bmove)
 }
-fn iterative_deepening_mtd_f(root : &mut Game) -> i32 {
 
-    let mut firstguess = 0;
-    for d in 1..7 {
-        //firstguess = mtd_f(root, firstguess, d);
-        //if times_up() 
-        { break; }
-    }
-    return firstguess;
-}
 
 /*
 pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i32 {
