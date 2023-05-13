@@ -25,8 +25,8 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
     let bpo = possibility_b(game);
     score += wpo.popcnt() as i32;
     score -= bpo.popcnt() as i32;
-    score += ((possibility_w(game) & SQUARE_CENTER).popcnt() /* 10 */) as i32;
-    score -= ((possibility_b(game) & SQUARE_CENTER).popcnt() /* 10 */)as i32;
+    score += ((wpo & SQUARE_CENTER).popcnt() /* 10 */) as i32;
+    score -= ((bpo & SQUARE_CENTER).popcnt() /* 10 */)as i32;
     
     score
 }

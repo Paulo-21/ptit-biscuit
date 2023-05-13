@@ -1,5 +1,6 @@
 use std::io;
 use crate::chess::*;
+use crate::eval::eval;
 use crate::search::*;
 use crate::table_transposition::TranspositionTable;
 use std::time::Instant;
@@ -57,16 +58,16 @@ pub fn uci () {
 fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("START Compute");
     let now = Instant::now();
-    let depth = 6;
+    let depth = 7;
     eprintln!("Pronfondeur : {depth}");
     //draw_the_game_state(game);
     //compute_negamax(game)
     //let res = compute_alpha_beta_neg(game, depth);
-    let res = compute_alpha_beta_neg_tt(game, depth, tt);
+    //let res = compute_alpha_beta_neg_tt(game, depth, tt);
     //let res = compute_minimax(game);
     //let res = compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth );
-    //let res = compute_mdt_f_iter(game, depth, tt);
+    let res = compute_mdt_f_iter(game, depth, tt);
 
     eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());
     res
@@ -253,9 +254,11 @@ fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTa
 fn compute_mdt_f_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("MTD-F");
     let mut nb_node : u64 = 0;
+    //let legal_move = get_legal_move(game.white_to_play, game);
     let (mut firstguess, mut bmove) = (0,0);
-    for d in 1..depth {
-        (firstguess, bmove) = mtd_f(game, firstguess, d, tt, &mut nb_node);
+    //let (mut firstguess, mut bmove) = (eval(game, legal_move.len() as i32),0);
+    for d in 1..depth+1 {
+        (firstguess, bmove) = mtd_f(game, firstguess, d, tt, &mut nb_node, bmove);
         let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
         let out = convert_move_to_str(a, b, p);
         eprintln!(" depth : {}, current : {}, eval : {}", d , out, firstguess);

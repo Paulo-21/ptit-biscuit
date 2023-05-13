@@ -57,7 +57,7 @@ impl TranspositionTable {
         let k = tt.hash as usize % self.table.len();
         self.table[k] = tt;
     }
-    pub fn get(&mut self, hash : u64) -> Transposition {
-        self.table[hash as usize % self.table.len()]
+    pub fn get(&self, hash : u64) -> &Transposition {
+        &self.table[hash as usize % self.table.len()]
     }
 }

@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use bitintr::{ Tzcnt };//, Lzcnt, Andn};
+use bitintr::{ Tzcnt, Blsr };//, Lzcnt, Andn};
 use std::collections::VecDeque;
 use crate::zobrist::*;
 
@@ -94,7 +94,8 @@ static ANTIDIAG_MASKS : [u64;15] = [
 	0x804020100000000, 0x402010000000000, 0x201000000000000, 0x100000000000000
 ];
 
-pub static SQUARE_CENTER : u64 = 103481868288;
+//pub static SQUARE_CENTER : u64 = 103481868288;
+pub static SQUARE_CENTER : u64 = 0x1818000000;
 
 lazy_static! {
     static ref FIRST_RANK_ATTACKS: [[u64; 8]; 64] = {
@@ -1252,7 +1253,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                         legal_moves.push_back(((piece<<9) + (b<<1) + promote, Piece::PAWN));
                     }
                 }
-                possi_wp = possi_wp & (possi_wp - 1);
+                possi_wp = possi_wp.blsr();
+                //possi_wp = possi_wp & (possi_wp - 1);
             }
         }
         //Knight
@@ -1277,7 +1279,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::KNIGHT));
                     }
                 }
-                wn_possi = wn_possi & (wn_possi - 1);
+                wn_possi = wn_possi.blsr();
+                //wn_possi = wn_possi & (wn_possi - 1);
             }
         }
         
@@ -1301,7 +1304,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::BISHOP));
                     }
                 }
-                wb_possi = wb_possi & (wb_possi - 1);
+                wb_possi = wb_possi.blsr();
+                //wb_possi = wb_possi & (wb_possi - 1);
             }
         }
         //Rook
@@ -1316,7 +1320,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 let b = wr_possi.tzcnt();
                 let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
-                wr_possi = wr_possi & (wr_possi - 1);
+                wr_possi = wr_possi.blsr();
+                //wr_possi = wr_possi & (wr_possi - 1);
                 if !is_check {
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::ROOK));
@@ -1346,7 +1351,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::QUEEN));
                     }
                 }
-                wq_possi = wq_possi & (wq_possi - 1);
+                wq_possi = wq_possi.blsr();
+                //wq_possi = wq_possi & (wq_possi - 1);
             }
         }
         //King
@@ -1365,7 +1371,8 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                     legal_moves.push_back(((game.wk.tzcnt() <<9) + (b<<1), Piece::KING));
                 }
             }
-            possi_wk = possi_wk & (possi_wk - 1);
+            possi_wk = possi_wk.blsr();
+            //possi_wk = possi_wk & (possi_wk - 1);
         }
     }
     else { //Black Possiblity
@@ -1517,6 +1524,320 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
         }
     }
     legal_moves
+}
+pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable) -> (Vec<(u64, Piece)> , Vec<(u64, Piece)>, VecDeque<(u64, Piece)>) {
+    //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+    let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
+    let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
+    let occupied = black | white;
+    let mut hash_moves  = Vec::<(u64, Piece)>::new();
+    let mut killer_moves  = Vec::<(u64, Piece)>::new();
+    let mut legal_moves = VecDeque::<(u64, Piece)>::new();
+    if side_w { //White Possibility
+        //Pions Possibility
+        //let black_normal = attack_normal_piece_b(&game, black);
+        //let k = game.wk.tzcnt();
+        let mut wp_test = game.wp;
+        while  wp_test != 0 {
+            let piece = wp_test.tzcnt();
+            let wp_extract = 1u64 << piece;
+            wp_test = wp_test & (wp_test-1);
+            let mut possi_wp = possibility_wp(wp_extract, !(occupied), black);
+            while possi_wp != 0 {
+                let mut promote = 0;
+                let mut promote_piece = Piece::NONE;
+                let b = possi_wp.tzcnt();
+                //println!("hello white {} {} {}", b, RANK_MASK[0] ,b & RANK_MASK[0]);
+                if 1<<b & RANK_MASK[7] != 0 {
+                    promote = 1;
+                    promote_piece = Piece::QUEEN;
+                }
+                let mut game1 = *game;
+                let b = possi_wp.tzcnt();
+                let capture = compute_move_w_hash((piece, b, promote_piece), &mut game1);
+                //let is_check = is_attacked_by_slider_w(&game1, k) &&  black_normal & k != 0;
+                let is_check = is_attacked(true, &game1);
+                if !is_check {
+                    let t = tt.get(game.hash);
+                    
+                    if capture > 0 {
+                        legal_moves.push_front(((piece<<9) + (b<<1) + promote, Piece::PAWN));
+                    }
+                    else {
+                        legal_moves.push_back(((piece<<9) + (b<<1) + promote, Piece::PAWN));
+                    }
+                }
+                possi_wp = possi_wp.blsr();
+                //possi_wp = possi_wp & (possi_wp - 1);
+            }
+        }
+        //Knight
+        //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+        let mut wn_test = game.wn;
+        while wn_test != 0 {
+            let piece = wn_test.tzcnt();
+            let wn_extract = 1u64 << piece;
+            wn_test = wn_test & (wn_test - 1);
+            let mut wn_possi = possibility_n( wn_extract) & !white;
+            while wn_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = wn_possi.tzcnt();
+                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(true, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece<<9) + (b<<1), Piece::KNIGHT));
+                    }
+                    else {
+                        legal_moves.push_back(((piece<<9) + (b<<1), Piece::KNIGHT));
+                    }
+                }
+                wn_possi = wn_possi.blsr();
+                //wn_possi = wn_possi & (wn_possi - 1);
+            }
+        }
+        
+        //Bishop
+        let mut wb_test = game.wb;
+        while wb_test != 0 {
+            let piece = wb_test.tzcnt();
+            wb_test = wb_test & (wb_test - 1);
+            let mut wb_possi = diag_antid_moves(piece, occupied) & !white;
+            while wb_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = wb_possi.tzcnt();
+                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(true, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece<<9) + (b<<1), Piece::BISHOP));
+                    }
+                    else {
+                        legal_moves.push_back(((piece<<9) + (b<<1), Piece::BISHOP));
+                    }
+                }
+                wb_possi = wb_possi.blsr();
+                //wb_possi = wb_possi & (wb_possi - 1);
+            }
+        }
+        //Rook
+        let mut wr_test = game.wr;
+        while wr_test != 0 {
+            let piece = wr_test.tzcnt();
+            wr_test = wr_test & (wr_test - 1);
+            let mut wr_possi = hv_moves(piece, occupied) & !white;
+            while wr_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = wr_possi.tzcnt();
+                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(true, &game1);
+                wr_possi = wr_possi.blsr();
+                //wr_possi = wr_possi & (wr_possi - 1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece<<9) + (b<<1), Piece::ROOK));
+                    }
+                    else {
+                        legal_moves.push_back(((piece<<9) + (b<<1), Piece::ROOK));
+                    }
+                }
+            }
+        }
+
+        //Queen
+        if game.wq != 0 {
+            let piece = game.wq.tzcnt();
+            let mut wq_possi = (hv_moves(piece, occupied) | diag_antid_moves(piece, occupied)) & !white;
+            while wq_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = wq_possi.tzcnt();
+                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(true, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece<<9) + (b<<1), Piece::QUEEN));
+                    }
+                    else {
+                        legal_moves.push_back(((piece<<9) + (b<<1), Piece::QUEEN));
+                    }
+                }
+                wq_possi = wq_possi.blsr();
+                //wq_possi = wq_possi & (wq_possi - 1);
+            }
+        }
+        //King
+        
+        let mut possi_wk = possibility_k(game.wk) & !white;
+        while possi_wk != 0 {
+            let mut game1 = *game;
+            let b = possi_wk.tzcnt();
+            let capture = compute_move_w_thrust((game.wk.tzcnt(), b, Piece::NONE), &mut game1);
+            let is_check = is_attacked(true, &game1);
+            if !is_check {
+                if capture > 0 {
+                    legal_moves.push_front(((game.wk.tzcnt() <<9) + (b<<1), Piece::KING));
+                }
+                else {
+                    legal_moves.push_back(((game.wk.tzcnt() <<9) + (b<<1), Piece::KING));
+                }
+            }
+            possi_wk = possi_wk.blsr();
+            //possi_wk = possi_wk & (possi_wk - 1);
+        }
+    }
+    else { //Black Possiblity
+        //Pions Possibility
+        //let white_normal = attack_normal_piece_w(&game, white);
+        let mut bp_test = game.bp;
+        while  bp_test != 0 {
+            let piece = bp_test.tzcnt();
+            let bp_extract = 1u64 << piece;
+            
+            bp_test = bp_test & (bp_test-1);
+            let mut possi_bp = possibility_bp2(bp_extract, !(occupied), white);
+            while possi_bp != 0 {
+                let mut game1 = *game;
+                let mut promote = 0;
+                let mut promote_piece = Piece::NONE;
+                let b = possi_bp.tzcnt();
+                if 1<<b & RANK_MASK[0] != 0 {
+                    //println!("hello black {} {} {}", b, RANK_MASK[0] ,b & RANK_MASK[0]);
+                    promote = 1;
+                    promote_piece = Piece::QUEEN;
+                }
+                let capture = compute_move_b_thrust((piece, b, promote_piece), &mut game1);
+                let is_check = is_attacked(false, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece <<9) + (b<<1)+promote, Piece::PAWN));
+                    }
+                    else {
+                        legal_moves.push_back(((piece <<9) + (b<<1)+promote, Piece::PAWN));
+                    }
+                }
+                possi_bp = possi_bp & (possi_bp - 1);
+            }
+        }
+        //Knight
+        //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+        let mut bn_test = game.bn;
+        while bn_test != 0 {
+            let piece = bn_test.tzcnt() ;
+            let bn_extract = 1u64 << piece;
+            bn_test = bn_test & (bn_test-1);
+            let mut bn_possi = possibility_n(bn_extract) & !black;
+            while bn_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = bn_possi.tzcnt() ;
+                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(false, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece <<9) + (b<<1), Piece::KNIGHT));
+                    }
+                    else {
+                        legal_moves.push_back(((piece <<9) + (b<<1), Piece::KNIGHT));
+                    }
+                }
+                bn_possi = bn_possi & (bn_possi - 1);
+            }
+        }
+        
+        //Bishop
+        let mut bb_test = game.bb;
+        while bb_test != 0 {
+            let piece = bb_test.tzcnt();
+            bb_test = bb_test & (bb_test - 1);
+            let mut bb_possi = diag_antid_moves(piece, occupied) & !black;
+            while bb_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = bb_possi.tzcnt();
+                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(false, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece <<9) + (b<<1), Piece::BISHOP));
+                    }
+                    else {
+                        legal_moves.push_back(((piece <<9) + (b<<1), Piece::BISHOP));
+                    }
+                }
+                bb_possi = bb_possi & (bb_possi - 1);
+            }
+        }
+        //Rook
+        let mut br_test = game.br;
+        while br_test != 0 {
+            let piece = br_test.tzcnt();
+            br_test = br_test & (br_test - 1);
+            let mut br_possi = hv_moves(piece, occupied) & !black;
+            while br_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = br_possi.tzcnt();
+                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(false, &game1);
+                if !is_check {
+                    if capture > 0 {
+                    legal_moves.push_front(((piece <<9) + (b<<1), Piece::ROOK));
+                    }
+                    else {
+                        legal_moves.push_back(((piece <<9) + (b<<1), Piece::ROOK));
+                    }
+                }
+                br_possi = br_possi & (br_possi - 1);
+            }
+        }
+
+        //Queen
+        if game.bq != 0 {
+            let piece = game.bq.tzcnt();
+            let mut bq_possi = (hv_moves(piece, occupied) | diag_antid_moves(piece, occupied)) & !black;
+            while bq_possi != 0 {
+                //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+                let mut game1 = *game;
+                let b = bq_possi.tzcnt();
+                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let is_check = is_attacked(false, &game1);
+                if !is_check {
+                    if capture > 0 {
+                        legal_moves.push_front(((piece <<9) + (b<<1), Piece::QUEEN));
+                    }
+                    else {
+                        legal_moves.push_back(((piece <<9) + (b<<1), Piece::QUEEN));
+                    }
+                }
+                bq_possi = bq_possi & (bq_possi - 1);
+            }
+        }
+        
+        //King
+        let mut possi_bk = possibility_k(game.bk) & !black;
+        let piece = game.bk.tzcnt();
+        while possi_bk != 0 {
+            //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
+            let mut game1 = *game;
+            let b = possi_bk.tzcnt();
+            let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+            let is_check = is_attacked(false, &game1);
+            if !is_check {
+                if capture > 0 {
+                    legal_moves.push_front(((piece <<9) + (b<<1), Piece::KING));
+                }
+                else {
+                    legal_moves.push_back(((piece <<9) + (b<<1), Piece::KING));
+                }
+            }
+            possi_bk = possi_bk & (possi_bk - 1);
+        }
+    }
+    (hash_moves, killer_moves, legal_moves)
 }
 
 pub fn print_custum_move(a_move : (u64,Piece)) {
