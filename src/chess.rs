@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use crate::zobrist::*;
 
 
-use crate::table_transposition::TranspositionTable;
+use crate::table_transposition::{TranspositionTable, node_type};
 
 static BASICSTART_CHESS_BOARD:[[char;8];8] = [
     ['r','n','b','q','k','b','n','r'],
@@ -1525,18 +1525,15 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     }
     legal_moves
 }
-pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable) -> (Vec<(u64, Piece)> , Vec<(u64, Piece)>, VecDeque<(u64, Piece)>) {
+pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &mut TranspositionTable) -> (Vec<(u64, Piece)> , Vec<(u64, Piece)>, VecDeque<(u64, Piece)>) {
     //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
     let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
     let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
     let occupied = black | white;
     let mut hash_moves  = Vec::<(u64, Piece)>::new();
-    let mut killer_moves  = Vec::<(u64, Piece)>::new();
+    let killer_moves  = Vec::<(u64, Piece)>::new();
     let mut legal_moves = VecDeque::<(u64, Piece)>::new();
-    if side_w { //White Possibility
-        //Pions Possibility
-        //let black_normal = attack_normal_piece_b(&game, black);
-        //let k = game.wk.tzcnt();
+    if side_w { 
         let mut wp_test = game.wp;
         while  wp_test != 0 {
             let piece = wp_test.tzcnt();
@@ -1557,9 +1554,18 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 let capture = compute_move_w_hash((piece, b, promote_piece), &mut game1);
                 //let is_check = is_attacked_by_slider_w(&game1, k) &&  black_normal & k != 0;
                 let is_check = is_attacked(true, &game1);
+                possi_wp = possi_wp.blsr();
                 if !is_check {
-                    let t = tt.get(game.hash);
-                    
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) + promote, Piece::PAWN));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1) + promote, Piece::PAWN));
                     }
@@ -1567,7 +1573,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece<<9) + (b<<1) + promote, Piece::PAWN));
                     }
                 }
-                possi_wp = possi_wp.blsr();
                 //possi_wp = possi_wp & (possi_wp - 1);
             }
         }
@@ -1583,9 +1588,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = wn_possi.tzcnt();
-                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_w_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
+                wn_possi = wn_possi.blsr();
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::KNIGHT));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::KNIGHT));
                     }
@@ -1593,7 +1609,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::KNIGHT));
                     }
                 }
-                wn_possi = wn_possi.blsr();
                 //wn_possi = wn_possi & (wn_possi - 1);
             }
         }
@@ -1608,9 +1623,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = wb_possi.tzcnt();
-                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_w_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
+                wb_possi = wb_possi.blsr();
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::BISHOP));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::BISHOP));
                     }
@@ -1618,7 +1644,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::BISHOP));
                     }
                 }
-                wb_possi = wb_possi.blsr();
                 //wb_possi = wb_possi & (wb_possi - 1);
             }
         }
@@ -1632,11 +1657,21 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = wr_possi.tzcnt();
-                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_w_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
                 wr_possi = wr_possi.blsr();
                 //wr_possi = wr_possi & (wr_possi - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::ROOK));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::ROOK));
                     }
@@ -1655,9 +1690,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = wq_possi.tzcnt();
-                let capture = compute_move_w_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_w_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(true, &game1);
+                wq_possi = wq_possi.blsr();
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::QUEEN));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece<<9) + (b<<1), Piece::QUEEN));
                     }
@@ -1665,7 +1711,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece<<9) + (b<<1), Piece::QUEEN));
                     }
                 }
-                wq_possi = wq_possi.blsr();
                 //wq_possi = wq_possi & (wq_possi - 1);
             }
         }
@@ -1675,9 +1720,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
         while possi_wk != 0 {
             let mut game1 = *game;
             let b = possi_wk.tzcnt();
-            let capture = compute_move_w_thrust((game.wk.tzcnt(), b, Piece::NONE), &mut game1);
+            let capture = compute_move_w_hash((game.wk.tzcnt(), b, Piece::NONE), &mut game1);
             let is_check = is_attacked(true, &game1);
+            possi_wk = possi_wk.blsr();
             if !is_check {
+                let t = tt.get(game1.hash);
+                if t.hash == game1.hash {
+                    match t.node_type {
+                        node_type::PV | node_type::CUT => {
+                            hash_moves.push(((game.wk.tzcnt()<<9) + (b<<1) , Piece::KING));
+                            continue;
+                        },
+                        _=>{ }
+                    }
+                }
                 if capture > 0 {
                     legal_moves.push_front(((game.wk.tzcnt() <<9) + (b<<1), Piece::KING));
                 }
@@ -1685,7 +1741,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                     legal_moves.push_back(((game.wk.tzcnt() <<9) + (b<<1), Piece::KING));
                 }
             }
-            possi_wk = possi_wk.blsr();
             //possi_wk = possi_wk & (possi_wk - 1);
         }
     }
@@ -1709,9 +1764,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                     promote = 1;
                     promote_piece = Piece::QUEEN;
                 }
-                let capture = compute_move_b_thrust((piece, b, promote_piece), &mut game1);
+                let capture = compute_move_b_hash((piece, b, promote_piece), &mut game1);
                 let is_check = is_attacked(false, &game1);
+                possi_bp = possi_bp & (possi_bp - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1)+promote , Piece::PAWN));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece <<9) + (b<<1)+promote, Piece::PAWN));
                     }
@@ -1719,7 +1785,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece <<9) + (b<<1)+promote, Piece::PAWN));
                     }
                 }
-                possi_bp = possi_bp & (possi_bp - 1);
             }
         }
         //Knight
@@ -1734,9 +1799,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = bn_possi.tzcnt() ;
-                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_b_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(false, &game1);
+                bn_possi = bn_possi & (bn_possi - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::KNIGHT));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece <<9) + (b<<1), Piece::KNIGHT));
                     }
@@ -1744,7 +1820,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece <<9) + (b<<1), Piece::KNIGHT));
                     }
                 }
-                bn_possi = bn_possi & (bn_possi - 1);
             }
         }
         
@@ -1758,9 +1833,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = bb_possi.tzcnt();
-                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_b_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(false, &game1);
+                bb_possi = bb_possi & (bb_possi - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::BISHOP));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece <<9) + (b<<1), Piece::BISHOP));
                     }
@@ -1768,7 +1854,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece <<9) + (b<<1), Piece::BISHOP));
                     }
                 }
-                bb_possi = bb_possi & (bb_possi - 1);
             }
         }
         //Rook
@@ -1781,9 +1866,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = br_possi.tzcnt();
-                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_b_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(false, &game1);
+                br_possi = br_possi & (br_possi - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::ROOK));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                     legal_moves.push_front(((piece <<9) + (b<<1), Piece::ROOK));
                     }
@@ -1791,7 +1887,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece <<9) + (b<<1), Piece::ROOK));
                     }
                 }
-                br_possi = br_possi & (br_possi - 1);
             }
         }
 
@@ -1803,9 +1898,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                 //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
                 let mut game1 = *game;
                 let b = bq_possi.tzcnt();
-                let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+                let capture = compute_move_b_hash((piece, b, Piece::NONE), &mut game1);
                 let is_check = is_attacked(false, &game1);
+                bq_possi = bq_possi & (bq_possi - 1);
                 if !is_check {
+                    let t = tt.get(game1.hash);
+                    if t.hash == game1.hash {
+                        match t.node_type {
+                            node_type::PV | node_type::CUT => {
+                                hash_moves.push(((piece<<9) + (b<<1) , Piece::QUEEN));
+                                continue;
+                            },
+                            _=>{ }
+                        }
+                    }
                     if capture > 0 {
                         legal_moves.push_front(((piece <<9) + (b<<1), Piece::QUEEN));
                     }
@@ -1813,7 +1919,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                         legal_moves.push_back(((piece <<9) + (b<<1), Piece::QUEEN));
                     }
                 }
-                bq_possi = bq_possi & (bq_possi - 1);
             }
         }
         
@@ -1824,9 +1929,20 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
             //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
             let mut game1 = *game;
             let b = possi_bk.tzcnt();
-            let capture = compute_move_b_thrust((piece, b, Piece::NONE), &mut game1);
+            let capture = compute_move_b_hash((piece, b, Piece::NONE), &mut game1);
             let is_check = is_attacked(false, &game1);
+            possi_bk = possi_bk & (possi_bk - 1);
             if !is_check {
+                let t = tt.get(game1.hash);
+                if t.hash == game1.hash {
+                    match t.node_type {
+                        node_type::PV | node_type::CUT => {
+                            hash_moves.push(((piece<<9) + (b<<1) , Piece::KING));
+                            continue;
+                        },
+                        _ => { }
+                    }
+                }
                 if capture > 0 {
                     legal_moves.push_front(((piece <<9) + (b<<1), Piece::KING));
                 }
@@ -1834,7 +1950,6 @@ pub fn get_legal_move_hash(side_w : bool, game : &Game, tt : &TranspositionTable
                     legal_moves.push_back(((piece <<9) + (b<<1), Piece::KING));
                 }
             }
-            possi_bk = possi_bk & (possi_bk - 1);
         }
     }
     (hash_moves, killer_moves, legal_moves)

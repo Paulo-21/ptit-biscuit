@@ -4,6 +4,7 @@ use crate::eval::*;
 use crate::table_transposition::TranspositionTable;
 use crate::table_transposition::node_type;
 use std::cmp::{ max, min };
+use std::hash;
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
@@ -207,6 +208,7 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i3
 pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
     *nb_node+=1;
     let alpha_orgi = alpha;
+    let mut hash_move = 0u64;
     /* TT look up */
     let mut best_move = 0u64;
     let tt_entry = tt.get(game.hash);
@@ -214,30 +216,21 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
         
         if tt_entry.depth >= depth {
             match tt_entry.node_type {
-            node_type::PV =>  return (tt_entry.eval, tt_entry.bestmove),
-            node_type::ALL => alpha = max(alpha, tt_entry.eval),
-            node_type::CUT => beta = min(beta, tt_entry.eval)
+                node_type::PV =>  return (tt_entry.eval, tt_entry.bestmove),
+                node_type::ALL => alpha = max(alpha, tt_entry.eval),
+                node_type::CUT => { 
+                    beta = min(beta, tt_entry.eval);
+                    hash_move = tt_entry.bestmove;
+                }
             }
             if alpha >= beta {
                 return (tt_entry.eval, tt_entry.bestmove);
             }
-        }
-        /*else {
-            match tt_entry.node_type {
-                node_type::PV => {
-                    best_move = tt_entry.bestmove;
-                    println!("BEST");
-                },
-                _ => {
-
-                }
-            }
-        }*/
-        
+        }        
     }
     
-    
     let mut legal_moves = get_legal_move(game.white_to_play, game);
+    //let (hash_moves , killer_moves, mut legal_moves)= get_legal_move_hash(game.white_to_play, game, tt);
     
     if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
@@ -246,13 +239,20 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
         };
         return (eval,0);
     };
-    if first != 0 {
+    /*if first != 0 {
         legal_moves.push_front((first,Piece::NONE));
         //eprintln!("Hello {}", convert_custum_to_str(first));
-    }
+    }*/
+    //println!("{} {}", hash_moves.len() , legal_moves.len());
     let mut value = i32::MIN>>1;
     
+    if hash_move != 0 {
+        legal_moves.push_front((hash_move, Piece::NONE));
+    }
     for moveto_play in legal_moves {
+        if hash_move == moveto_play.0 {
+            continue;
+        }
         //eprintln!("MOVE : {}", convert_custum_to_str(moveto_play.0));
         let (a,b, prom) = convert_custum_move(moveto_play);
 
@@ -290,7 +290,7 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
     }
     tt.set(game.hash, depth, value, best_move, node_t);
     //eprintln!("{}", convert_custum_to_str(best_move));
-    (value, best_move) 
+    (value, best_move)
 }
 pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
     //eprintln!("MTD-F inside {} {}", depth, f);

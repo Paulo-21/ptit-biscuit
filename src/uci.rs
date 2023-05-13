@@ -261,7 +261,8 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) ->
         (firstguess, bmove) = mtd_f(game, firstguess, d, tt, &mut nb_node, bmove);
         let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
         let out = convert_move_to_str(a, b, p);
-        eprintln!(" depth : {}, current : {}, eval : {}", d , out, firstguess);
+        eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}", d , out, firstguess, nb_node);
+        eprintln!(" tt hits : {}",tt.stat_hint);
         //if times_up()
         //{ break; }
     }
