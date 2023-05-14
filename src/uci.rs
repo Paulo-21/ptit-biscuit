@@ -50,6 +50,9 @@ pub fn uci () {
             },
             "stop" => {
                 //break;
+            },
+            "quit" => {
+                break;
             }
             _ => {
 
