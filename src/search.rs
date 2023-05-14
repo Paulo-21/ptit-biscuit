@@ -84,18 +84,22 @@ pub fn pvs(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node 
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
-        return eval(game, legal_moves.len() as i32);
-    }
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return eval;
+    };
     let mut first = true;
+    let mut score = 0;
     for moveto in legal_moves {
-        let mut score = 0;
         let (a, b, prom) = convert_custum_move(moveto);
         let mut game1 = *game;
         game1.white_to_play ^= true;
         if game.white_to_play {
-            compute_move_w((a, b, prom), &mut game1);
+            compute_move_w_hash((a, b, prom), &mut game1);
         } else {
-            compute_move_b((a, b, prom), &mut game1);
+            compute_move_b_hash((a, b, prom), &mut game1);
         }
         if first {
             first = false;
@@ -115,7 +119,157 @@ pub fn pvs(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node 
     alpha
 }
 
+pub fn pvs_tt(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable) -> i32 {
+    let alpha_orgi = alpha;
+    let mut hash_move = 0;
+    let tt_entry = tt.get(game.hash);
+    if tt_entry.hash == game.hash && tt_entry.depth >= depth {
+        match tt_entry.node_type {
+            node_type::PV =>  return tt_entry.eval,
+            node_type::ALL => alpha = max(alpha, tt_entry.eval),
+            node_type::CUT => { beta = min(beta, tt_entry.eval); hash_move = tt_entry.bestmove;}
+        }
+        if alpha >= beta {
+            return tt_entry.eval;
+        }
+    }
+    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    *nb_node+=1;
+    if depth == 0 || legal_moves.is_empty() {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return eval;
+    };
+    /*if hash_move != 0 {
+        legal_moves.push_front((hash_move, Piece::NONE));
+    }*/
+    let mut first = true;
+    let mut score = 0;
+    let mut bestmove = 0;
+    for moveto in legal_moves {
+        let (a, b, prom) = convert_custum_move(moveto);
+        let mut game1 = *game;
+        game1.white_to_play ^= true;
+        if game.white_to_play {
+            compute_move_w_hash((a, b, prom), &mut game1);
+        } else {
+            compute_move_b_hash((a, b, prom), &mut game1);
+        }
+        if first {
+            first = false;
+            score = -pvs_tt(&mut game1, depth- 1, -beta, -alpha, nb_node, tt);
+            bestmove = moveto.0;
+        }
+        else {
+            score = -pvs_tt(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt);
+            
+            if alpha < score && score < beta {
+                bestmove = moveto.0;
+                score = -pvs_tt(&mut game1, depth- 1, -beta, -score, nb_node, tt);
+            }
+        }
+        if score > alpha {
+            bestmove = moveto.0;
+            alpha = score;
+        }
+        //alpha = max(alpha, score);
+        if alpha > beta {
+            break;
+        }
+    }
+    let node_t;
+    if score <= alpha_orgi {
+        node_t = node_type::CUT;
+    }
+    else if score >= beta {
+        node_t = node_type::ALL;
+    }
+    else {
+        node_t = node_type::PV;
+    }
+    tt.set(game.hash, depth, score, bestmove , node_t);
 
+    alpha
+}
+pub fn pvs_tt_best(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+    let alpha_orgi = alpha;
+    let mut hash_move = 0;
+    let tt_entry = tt.get(game.hash);
+    if tt_entry.hash == game.hash && tt_entry.depth >= depth {
+        match tt_entry.node_type {
+            node_type::PV =>  return tt_entry.eval,
+            node_type::ALL => alpha = max(alpha, tt_entry.eval),
+            node_type::CUT => { beta = min(beta, tt_entry.eval); hash_move = tt_entry.bestmove;}
+        }
+        if alpha >= beta {
+            return tt_entry.eval;
+        }
+    }
+    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    *nb_node+=1;
+    if depth == 0 || legal_moves.is_empty() {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return eval;
+    };
+    if hash_move != 0 {
+        legal_moves.push_front((hash_move, Piece::NONE));
+    }
+    if first_move != 0 {
+        legal_moves.push_front((first_move, Piece::NONE));
+    }
+    let mut first = true;
+    let mut score = 0;
+    let mut bestmove = 0;
+    for moveto in legal_moves {
+        let (a, b, prom) = convert_custum_move(moveto);
+        let mut game1 = *game;
+        game1.white_to_play ^= true;
+        if game.white_to_play {
+            compute_move_w_hash((a, b, prom), &mut game1);
+        } else {
+            compute_move_b_hash((a, b, prom), &mut game1);
+        }
+        if first {
+            first = false;
+            score = -pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
+            bestmove = moveto.0;
+        }
+        else {
+            score = -pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
+            
+            if alpha < score && score < beta {
+                bestmove = moveto.0;
+                score = -pvs(&mut game1, depth- 1, -beta, -score, nb_node);
+            }
+        }
+        if score > alpha {
+            bestmove = moveto.0;
+            alpha = score;
+        }
+        //alpha = max(alpha, score);
+        if alpha > beta {
+            break;
+        }
+    }
+    let node_t;
+    if score <= alpha_orgi {
+        node_t = node_type::CUT;
+    }
+    else if score >= beta {
+        node_t = node_type::ALL;
+    }
+    else {
+        node_t = node_type::PV;
+    }
+    tt.set(game.hash, depth, score, bestmove , node_t);
+
+    alpha
+}
 pub fn alpha_beta_neg(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
@@ -155,8 +309,6 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i3
 
     let tt_entry = tt.get(game.hash);
     if tt_entry.hash == game.hash && tt_entry.depth >= depth {
-        /*println!("Hello");
-        println!("{}, {}", tt_entry.hash, game.hash);*/
         match tt_entry.node_type {
             node_type::PV =>  return tt_entry.eval,
             node_type::ALL => alpha = max(alpha, tt_entry.eval),
@@ -206,6 +358,7 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : i8, mut alpha : i32, mut beta : i3
     value
 }
 pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
+    
     *nb_node+=1;
     let alpha_orgi = alpha;
     let mut hash_move = 0u64;
@@ -220,17 +373,16 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
                 node_type::ALL => alpha = max(alpha, tt_entry.eval),
                 node_type::CUT => { 
                     beta = min(beta, tt_entry.eval);
-                    hash_move = tt_entry.bestmove;
                 }
             }
             if alpha >= beta {
                 return (tt_entry.eval, tt_entry.bestmove);
             }
         }        
+        hash_move = tt_entry.bestmove;
     }
     
     let mut legal_moves = get_legal_move(game.white_to_play, game);
-    //let (hash_moves , killer_moves, mut legal_moves)= get_legal_move_hash(game.white_to_play, game, tt);
     
     if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
@@ -239,20 +391,26 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
         };
         return (eval,0);
     };
-    /*if first != 0 {
-        legal_moves.push_front((first,Piece::NONE));
-        //eprintln!("Hello {}", convert_custum_to_str(first));
-    }*/
+    
     //println!("{} {}", hash_moves.len() , legal_moves.len());
     let mut value = i32::MIN>>1;
-    
+    let mut hash_played = false;
+    let mut first_played = false;
     if hash_move != 0 {
+        hash_played = true;
         legal_moves.push_front((hash_move, Piece::NONE));
     }
-    for moveto_play in legal_moves {
-        if hash_move == moveto_play.0 {
+    if first != 0 {
+        first_played = true;
+        legal_moves.push_front((first,Piece::NONE));
+        //eprintln!("Hello {}", convert_custum_to_str(first));
+    }
+    let mut i = 0;
+    for moveto_play in legal_moves{
+        if (hash_move == moveto_play.0 || first == moveto_play.0) && i > 2 {
             continue;
         }
+        
         //eprintln!("MOVE : {}", convert_custum_to_str(moveto_play.0));
         let (a,b, prom) = convert_custum_move(moveto_play);
 
@@ -265,19 +423,14 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
         if value < -score {
             value = -score;
             best_move = moveto_play.0;
-            /*let (a, b, p, ) = convert_custum_move((best_move, Piece::QUEEN));
-            let s = convert_move_to_str(a, b, p);
-
-            println!("good move : {}", s);*/
         }
         alpha = max(alpha, value);
         //value = max(value, );
         if alpha >= beta {
             break;
         }
+        i+=1;
     }
-
-    //tt_entry.eval = value;
     let node_t;
     if value <= alpha_orgi {
         node_t = node_type::CUT;
@@ -299,11 +452,11 @@ pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb
     //let bmove = 0;
     let mut upperbound = i32::MAX;
     let mut lowerbound = i32::MIN;
-    //let beta = 9999;
     loop  {
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
         (g, bmove) = alpha_beta_neg_tt_best(game, depth, beta-1, beta, tt , nb_node, first);
+        
         //eprintln!("{}", convert_custum_to_str(bmove));
         if g < beta { upperbound = g } else { lowerbound = g};
         if lowerbound >= upperbound {
@@ -312,29 +465,3 @@ pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb
     }
     (g, bmove)
 }
-
-
-/*
-pub fn negamax(game: &mut Game, depth : i8, color : bool, nb_node : &mut u64) -> i32 {
-    let legal_moves = get_legal_move(game.white_to_play, game);
-    *nb_node+=1;
-    if depth == 0 || legal_moves.len() == 0 {
-        let mut eval = eval(game, legal_moves.len() as i32);
-        if !color {
-            eval *= -1;
-        };
-        return eval;
-    };
-    let mut value = i32::MIN;
-    for moveto_play in legal_moves {
-        let (a,b) = convert_custum_move(moveto_play);
-        let mut game1 = *game;
-
-        if game.white_to_play { compute_move_w(a, b, &mut game1); }
-        else { compute_move_b(a, b, &mut game1); }
-        game1.white_to_play^=true;
-        value = max(value, negamax(&mut game1, depth-1, color^true, nb_node)*(-1i32));
-    }
-    value
-}
-*/

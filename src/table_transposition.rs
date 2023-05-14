@@ -5,6 +5,7 @@ static TABLE_SIZE : usize = 8 << 21;
 pub struct TranspositionTable {
     pub table :  Box <[Transposition]>,
     pub stat_hint : i32,
+    pub mask : usize,
 }
 #[derive(Debug, Clone, Copy)]
 pub enum node_type {
@@ -46,6 +47,7 @@ impl TranspositionTable {
             table : { vec![Transposition::new(0,0,0,0,node_type::PV); n].into_boxed_slice()
             },
             stat_hint : 0,
+            mask : n-1
         }
     }
     pub fn set(&mut self , hash : u64, depth : i8, eval : i32, bestmove : u64, node_type: node_type) {
@@ -55,9 +57,12 @@ impl TranspositionTable {
     }
     pub fn set_tt(&mut self, tt : Transposition) {
         let k = tt.hash as usize % self.table.len();
+        //let k = tt.hash as usize & self.mask;
         self.table[k] = tt;
     }
     pub fn get(&mut self, hash : u64) -> &Transposition {
+        //let a = &self.table[hash as usize & self.mask];
+        //println!("{:#034b}", self.mask);
         let a = &self.table[hash as usize % self.table.len()];
         if hash == a.hash && a.bestmove != 0 {
             self.stat_hint +=1;

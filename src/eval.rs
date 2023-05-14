@@ -1,4 +1,4 @@
-use bitintr::Popcnt;
+use bitintr::{Popcnt, Tzcnt, Blsr};
 use crate::chess::*;
 
 pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
@@ -23,20 +23,43 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
     let mut score = white_score - black_score;
     let wpo = possibility_w(game);
     let bpo = possibility_b(game);
-    score += wpo.popcnt() as i32;
-    score -= bpo.popcnt() as i32;
-    score += ((wpo & SQUARE_CENTER).popcnt() /* 10 */) as i32;
-    score -= ((bpo & SQUARE_CENTER).popcnt() /* 10 */)as i32;
+    let mut n = game.wn;
     
+    score += (wpo.popcnt() *2) as i32;
+    score -= (bpo.popcnt() *2) as i32;
+    while n != 0 { //KNIGHT POS SCORE
+        let k = n.tzcnt();
+        score += KNIGHT_POS_SCORE[k as usize];
+        n = n.blsr();
+    }
+    n = game.bn;
+    while n != 0 { //KNIGHT POS SCORE
+        let k = n.tzcnt();
+        score -= KNIGHT_POS_SCORE[k as usize];
+        n = n.blsr();
+    }
+    if game.nb_coups < 13 {
+        score += ((wpo & SQUARE_CENTER).popcnt() * 3 ) as i32;
+        score -= ((bpo & SQUARE_CENTER).popcnt()  * 3 )as i32;
+        score += eval_begin();
+    }
+    else if game.nb_coups < 30 {
+        score += eval_middle_game(game);
+    }
+    else {
+        score += eval_late_game(game);
+    }
     score
 }
-/*
-fn eval_begin() {
 
+fn eval_begin() -> i32 {
+    0
 }
-fn eval_let_game() {
-
+fn eval_late_game(game : &Game) -> i32 {
+    let k = KING_POS_END[game.wk.tzcnt() as usize] - KING_POS_END[game.bk.tzcnt() as usize];
+    k as i32
 }
-fn eval_middle_game() {
-
-}*/
+fn eval_middle_game(game : &Game) -> i32 {
+    let k = KING_POS_MIDDLE[game.wk.tzcnt() as usize] - KING_POS_MIDDLE[game.bk.tzcnt() as usize];
+    k as i32
+}

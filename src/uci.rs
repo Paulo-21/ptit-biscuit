@@ -1,14 +1,16 @@
-use std::io;
+use std::{io, sync::RwLock};
+use std::sync::Arc;
 use crate::chess::*;
 use crate::eval::eval;
 use crate::search::*;
 use crate::table_transposition::TranspositionTable;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use crate::perft::*;
+use std::thread;
 
 pub fn uci () {
     let mut game = Game::default();
-    let mut tt = TranspositionTable::with_memory(8<<25);
+    let mut tt = TranspositionTable::with_memory(8<<22);
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();
@@ -24,7 +26,7 @@ pub fn uci () {
                 game = input_position(command);
             },
             "go" => {
-                tt = TranspositionTable::with_memory(8<<25);
+                tt = TranspositionTable::with_memory(8<<22);
                 let (a, b, prom) = compute(&game, &mut tt);
                 let bestmovea = convert_square_to_move(a);
                 let bestmoveb = convert_square_to_move(b);
@@ -66,7 +68,7 @@ fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     //let res = compute_alpha_beta_neg_tt(game, depth, tt);
     //let res = compute_minimax(game);
     //let res = compute_alpha_beta(game, depth );
-    //let res = compute_pvs(game, depth );
+    //let res = compute_pvs(game, depth , tt);
     let res = compute_mdt_f_iter(game, depth, tt);
 
     eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());
@@ -251,43 +253,58 @@ fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTa
 }
 
 
-fn compute_mdt_f_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("MTD-F");
-    let mut nb_node : u64 = 0;
-    //let legal_move = get_legal_move(game.white_to_play, game);
-    let (mut firstguess, mut bmove) = (0,0);
-    //let (mut firstguess, mut bmove) = (eval(game, legal_move.len() as i32),0);
-    for d in 1..depth+1 {
-        (firstguess, bmove) = mtd_f(game, firstguess, d, tt, &mut nb_node, bmove);
-        let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
-        let out = convert_move_to_str(a, b, p);
-        eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}", d , out, firstguess, nb_node);
-        eprintln!(" tt hits : {}",tt.stat_hint);
-        //if times_up()
-        //{ break; }
-    }
-    let res = convert_custum_move((bmove, Piece::QUEEN));
+    let mut res = (0,0,Piece::NONE);
+    
+    let game1 = *game;
+    let mut stop = false;
+    let lock = Arc::new(RwLock::new((0,0, Piece::NONE)));
+    let lock2 = lock.clone();
+    //let t1 = thread::spawn(move || {
+        let mut tt = TranspositionTable::with_memory(8<<25);
+        let mut nb_node : u64 = 0;
+        //let legal_move = get_legal_move(game.white_to_play, game);
+        let (mut firstguess, mut bmove) = (0,0);
+        //let (mut firstguess, mut bmove) = (eval(game, legal_move.len() as i32),0);
+        for d in 1..depth+1 {
+            (firstguess, bmove) = mtd_f(&game1, firstguess, d, &mut tt, &mut nb_node, bmove);
+            let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
+            let out = convert_move_to_str(a, b, p);
+            eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}", d , out, firstguess, nb_node);
+            eprintln!(" tt hits : {}",tt.stat_hint);
+            
+            /*if *stopref
+            { break; }*/
+        }
+        res = convert_custum_move((bmove, Piece::QUEEN));
+    //    *lock2.write().unwrap() = convert_custum_move((bmove, Piece::QUEEN));
+    //});
+
+    //thread::sleep(Duration::from_secs(5));
+    
+    //let rt = lock.read().unwrap();
+    //t1.join();
+    //return *rt;
     return res;
 }
-/*fn compute_pvs(game : &Game, depth : i8) -> (u64 , u64, Piece) {
+fn compute_pvs(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64 , u64, Piece) {
     eprintln!("PRINCIPAL VARIATION SEARCH");
-    let alpha = i32::MIN<<1;
+    let alpha = i32::MIN>>1;
     let beta = i32::MAX>>1;
     let mut nb_node = 0u64;
     let legal_moves = get_legal_move(game.white_to_play, game);
     eprintln!("info : {:?}", legal_moves);
     let mut score = if game.white_to_play { i32::MIN } else { i32::MAX };
     let mut bestmove = (0u64, Piece::NONE);
-    if !legal_moves.is_empty() {
-        bestmove = *legal_moves.get(0).unwrap();
-    }
+    
     for moveto in legal_moves {
         let mut game1 = *game;
         let (a, b, prom) = convert_custum_move(moveto);
         if game.white_to_play { compute_move_w((a, b, prom), &mut game1); }
         else { compute_move_b((a, b, prom), &mut game1); }
         game1.white_to_play ^= true;
-        let move_score = -pvs(&mut game1, depth-1, alpha, beta, &mut nb_node);
+        let move_score = -pvs_tt_best(&mut game1, depth-1, alpha, beta, &mut nb_node, tt, 0);
         eprintln!("{}{} : {}, ", convert_square_to_move(a), convert_square_to_move(b), move_score);
         if move_score > score {
             score = move_score;
@@ -298,9 +315,22 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) ->
     let (a, b, prom) = convert_custum_move(bestmove);
     eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
-}*/
-
-
-/*fn get_bitboard_from_fen(_command : &str) -> Game {
-    
+}
+/*
+fn compute_pvs_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+    eprintln!("PFS Iter");
+    let mut nb_node : u64 = 0;
+    let (mut firstguess, mut bmove) = (0,0);
+    //let (mut firstguess, mut bmove) = (eval(game, legal_move.len() as i32),0);
+    for d in 1..depth+1 {
+        (firstguess,bmove) = pvs_tt_best(game, d, tt, &mut nb_node, bmove);
+        let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
+        let out = convert_move_to_str(a, b, p);
+        eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}", d , out, firstguess, nb_node);
+        eprintln!(" tt hits : {}",tt.stat_hint);
+        //if times_up()
+        //{ break; }
+    }
+    let res = convert_custum_move((bmove, Piece::QUEEN));
+    return res;
 }*/
