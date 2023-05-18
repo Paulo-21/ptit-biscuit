@@ -5,5 +5,5 @@ Features :
 UCI support<br>
 Alpha-beta prunning<br>
 bitboard based<br>
-
+PeSTO's evaluation
 <img alt="Ptit Biscuit" src="https://cdn.jeux2cuisine.fr/IMG/jpg/ptitbiscuit.jpg">
