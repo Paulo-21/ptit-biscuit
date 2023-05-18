@@ -93,7 +93,7 @@ fn eval_middle_game(game : &Game) -> i32 {
     score 
 }
 
-
+#[inline]
 fn pesto_eval(game: &Game) -> i32 {
 
     let mut game_phase = 0;

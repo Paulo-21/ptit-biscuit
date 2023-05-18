@@ -270,9 +270,9 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -
         let mut nb_node : u64 = 0;
         let legal_move = get_legal_move(game.white_to_play, game);
         for l in legal_move {
-            print!("{}, ", convert_custum_to_str(l.0));
+            eprint!("{}, ", convert_custum_to_str(l.0));
         }
-        println!();
+        eprintln!();
         let (mut firstguess, mut bmove) = (0,0);
         nb_node = 0;
         for d in 1..depth+1 {
