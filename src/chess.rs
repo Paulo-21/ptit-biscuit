@@ -68,7 +68,7 @@ pub fn convert_square_to_move(a_move : u64) -> String{
     a
 }
 
-static RANK_MASK : [u64;8] = [
+pub static RANK_MASK : [u64;8] = [
     0x00000000000000FF,
     0x000000000000FF00,
     0x0000000000FF0000, 
@@ -94,26 +94,71 @@ static ANTIDIAG_MASKS : [u64;15] = [
 	0x804020100000000, 0x402010000000000, 0x201000000000000, 0x100000000000000
 ];
 
-static _WPAWN_POS_SCORE : [i32; 64] = [
-    0,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,1,1,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
+
+pub static mg_pawn_table : [i32 ; 64] = [
+      0,   0,   0,   0,   0,   0,  0,   0,
+     98, 134,  61,  95,  68, 126, 34, -11,
+     -6,   7,  26,  31,  65,  56, 25, -20,
+    -14,  13,   6,  21,  23,  12, 17, -23,
+    -27,  -2,  -5,  12,  17,   6, 10, -25,
+    -26,  -4,  -4, -10,   3,   3, 33, -12,
+    -35,  -1, -20, -23, -15,  24, 38, -22,
+      0,   0,   0,   0,   0,   0,  0,   0,
 ];
-pub static _BPAWN_POS_SCORE : [i32; 64] = [
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
+
+pub static eg_pawn_table : [i32;64] = [
+      0,   0,   0,   0,   0,   0,   0,   0,
+    178, 173, 158, 134, 147, 132, 165, 187,
+     94, 100,  85,  67,  56,  53,  82,  84,
+     32,  24,  13,   5,  -2,   4,  17,  17,
+     13,   9,  -3,  -7,  -7,  -8,   3,  -1,
+      4,   7,  -6,   1,   0,  -5,  -1,  -8,
+     13,   8,   8,  10,  13,   0,   2,  -7,
+      0,   0,   0,   0,   0,   0,   0,   0,
 ];
+pub static  mg_knight_table :[i32;64] = [
+    -167, -89, -34, -49,  61, -97, -15, -107,
+     -73, -41,  72,  36,  23,  62,   7,  -17,
+     -47,  60,  37,  65,  84, 129,  73,   44,
+      -9,  17,  19,  53,  37,  69,  18,   22,
+     -13,   4,  16,  13,  28,  19,  21,   -8,
+     -23,  -9,  12,  10,  19,  17,  25,  -16,
+     -29, -53, -12,  -3,  -1,  18, -14,  -19,
+    -105, -21, -58, -33, -17, -28, -19,  -23,
+];
+
+pub static eg_knight_table : [i32;64] = [
+    -58, -38, -13, -28, -31, -27, -63, -99,
+    -25,  -8, -25,  -2,  -9, -25, -24, -52,
+    -24, -20,  10,   9,  -1,  -9, -19, -41,
+    -17,   3,  22,  22,  22,  11,   8, -18,
+    -18,  -6,  16,  25,  16,  17,   4, -18,
+    -23,  -3,  -1,  15,  10,  -3, -20, -22,
+    -42, -20, -10,  -5,  -2, -20, -23, -44,
+    -29, -51, -23, -15, -22, -18, -50, -64,
+];
+pub static mg_bishop_table : [i32;64] = [
+    -29,   4, -82, -37, -25, -42,   7,  -8,
+    -26,  16, -18, -13,  30,  59,  18, -47,
+    -16,  37,  43,  40,  35,  50,  37,  -2,
+     -4,   5,  19,  50,  37,  37,   7,  -2,
+     -6,  13,  13,  26,  34,  12,  10,   4,
+      0,  15,  15,  15,  14,  27,  18,  10,
+      4,  15,  16,   0,   7,  21,  33,   1,
+    -33,  -3, -14, -21, -13, -12, -39, -21,
+];
+
+pub static eg_bishop_table : [i32;64] = [
+    -14, -21, -11,  -8, -7,  -9, -17, -24,
+     -8,  -4,   7, -12, -3, -13,  -4, -14,
+      2,  -8,   0,  -1, -2,   6,   0,   4,
+     -3,   9,  12,   9, 14,  10,   3,   2,
+     -6,   3,  13,  19,  7,  10,  -3,  -9,
+    -12,  -3,   8,  10, 13,   3,  -7, -15,
+    -14, -18,  -7,  -1,  4,  -9, -15, -27,
+    -23,  -9, -23,  -5, -9, -16,  -5, -17,
+];
+
 pub static KNIGHT_POS_SCORE : [i32; 64] = [
     -50,-40,-30,-30,-30,-30,-40,-50,
     -40,-20,  0,  0,  0,  0,-20,-40,
@@ -481,8 +526,14 @@ pub fn compute_move_w(chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
         moves = hv_moves(square_a, occupied) & !white;
         from = &mut game.wr;
         if moves & b != 0 {
+            if square_a == 7 {
             game.wking_rook_never_move = false;
+            }
+            else if square_a == 0 {
+                game.wqueen_rook_never_move = false;
+            }
         }
+        
     }
     else if game.wq & a != 0 {
         let occupied = black | white;
@@ -593,7 +644,12 @@ pub fn compute_move_w_thrust(chessmove : (u64, u64, Piece), game : &mut Game) ->
         //moves = hv_moves(square_a, occupied) & !white;
         from = &mut game.wr;
         //if moves & b != 0 {
+        if square_a == 7 {
             game.wking_rook_never_move = false;
+        }
+        else if square_a == 0 {
+            game.wqueen_rook_never_move = false;
+        }
         //}
     }
     else if game.wq & a != 0 {
@@ -716,7 +772,12 @@ pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> 
         //moves = hv_moves(square_a, occupied) & !white;
         from = &mut game.wr;
         //if moves & b != 0 {
+        if square_a == 7 {
             game.wking_rook_never_move = false;
+        }
+        else if square_a == 0 {
+            game.wqueen_rook_never_move = false;
+        }
         //}
     }
     else if game.wq & a != 0 {
@@ -841,21 +902,27 @@ pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     else if game.bb & a != 0 {
         game.hash ^= PIECE_SQUARE[8][square_a as usize];
         game.hash ^= PIECE_SQUARE[8][square_b as usize];
-        let occupied = black | white;
+        //let occupied = black | white;
         //moves = diag_antid_moves(square_a, occupied) & !black;
         from = &mut game.bb;
     }
     else if game.br & a != 0 {
         game.hash ^= PIECE_SQUARE[9][square_a as usize];
         game.hash ^= PIECE_SQUARE[9][square_b as usize];
-        let occupied = black | white;
+        //let occupied = black | white;
         //moves = hv_moves(square_a, occupied) & !black;
         from = &mut game.br;
+        if square_a == 63 {
+            game.bking_rook_never_move = false;
+        }
+        else if square_a == 56 {
+            game.bqueen_rook_never_move = false;
+        }
     }
     else if game.bq & a != 0 {
         game.hash ^= PIECE_SQUARE[10][square_a as usize];
         game.hash ^= PIECE_SQUARE[10][square_b as usize];
-        let occupied = black | white;
+        //let occupied = black | white;
         //moves = (hv_moves(square_a, occupied) | diag_antid_moves(square_a, occupied)) & !black;
         from = &mut game.bq;
     }
@@ -965,6 +1032,12 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
         let occupied = black | white;
         moves = hv_moves(square_a, occupied) & !black;
         from = &mut game.br;
+        if square_a == 63 {
+            game.bking_rook_never_move = false;
+        }
+        else if square_a == 56 {
+            game.bqueen_rook_never_move = false;
+        }
     }
     else if game.bq & a != 0 {
         let occupied = black | white;
@@ -1067,6 +1140,12 @@ pub fn compute_move_b_thrust(chessmove : (u64,u64,Piece), game :&mut Game) -> i8
         //let occupied = black | white;
         //moves = hv_moves(square_a, occupied) & !black;
         from = &mut game.br;
+        if square_a == 63 {
+            game.bking_rook_never_move = false;
+        }
+        else if square_a == 56 {
+            game.bqueen_rook_never_move = false;
+        }
     }
     else if game.bq & a != 0 {
         //let occupied = black | white;
@@ -1426,6 +1505,12 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
             possi_wk = possi_wk.blsr();
             //possi_wk = possi_wk & (possi_wk - 1);
         }
+        if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(3) + 2u64.pow(2)) == 0 && possibility_b(game) & (2u64.pow(3) + 2u64.pow(2)) == 0 {
+            legal_moves.push_back(((4<<9)+(2<<1), Piece::KING));
+        }
+        if game.wking_never_move && game.wqueen_rook_never_move && (black | white) & (2u64.pow(6) + 2u64.pow(5)) == 0 && possibility_b(game) & (2u64.pow(6) + 2u64.pow(5)) == 0 {
+            legal_moves.push_back(((4<<9)+(6<<1), Piece::KING));
+        }
     }
     else { //Black Possiblity
         //Pions Possibility
@@ -1573,6 +1658,12 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
                 }
             }
             possi_bk = possi_bk & (possi_bk - 1);
+        }
+        if game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(59)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(59)) == 0 {
+            legal_moves.push_back(((60<<9) + (58<<1), Piece::KING));
+        }
+        if game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+            legal_moves.push_back(((60<<9) + (62<<1), Piece::KING));
         }
     }
     legal_moves

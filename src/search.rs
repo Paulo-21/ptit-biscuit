@@ -465,3 +465,25 @@ pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb
     }
     (g, bmove)
 }
+/*
+fn nextGuess(α, β, subtreeCount) {
+    return α + (β − α) × (subtreeCount − 1) / subtreeCount
+}
+pub fn bns(node, α, β) {
+    subtreeCount := number of children of node
+
+    do
+        test := nextGuess(α, β, subtreeCount)
+        betterCount := 0
+        for each child of node do
+            bestVal := −alphabeta(child, −test, −(test − 1))
+            if bestVal ≥ test then
+                betterCount := betterCount + 1
+                bestNode := child
+        (update number of sub-trees that exceeds separation test value)
+        (update alpha-beta range)
+    while not (β − α < 2 or betterCount = 1)
+
+    return bestNode
+}
+*/

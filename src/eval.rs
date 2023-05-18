@@ -38,6 +38,7 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
         score -= KNIGHT_POS_SCORE[k as usize];
         n = n.blsr();
     }
+    
     if game.nb_coups < 13 {
         score += ((wpo & SQUARE_CENTER).popcnt() * 3 ) as i32;
         score -= ((bpo & SQUARE_CENTER).popcnt()  * 3 )as i32;
@@ -60,6 +61,32 @@ fn eval_late_game(game : &Game) -> i32 {
     k as i32
 }
 fn eval_middle_game(game : &Game) -> i32 {
-    let k = KING_POS_MIDDLE[game.wk.tzcnt() as usize] - KING_POS_MIDDLE[game.bk.tzcnt() as usize];
-    k as i32
+    let mut n = 0;
+    let mut score = 0;
+    n = game.wp;
+    while n != 0 {
+        let k = n.tzcnt();
+        score += mg_pawn_table[k as usize];
+        n = n.blsr();
+    }
+    n = game.bp;
+    while n != 0 {
+        let k = n.tzcnt();
+        score -= mg_pawn_table[k as usize];
+        n = n.blsr();
+    }
+    /*n = game.wn;
+    while n != 0 {
+        let k = n.tzcnt();
+        score += mg_pawn_table[k as usize];
+        n = n.blsr();
+    }
+    n = game.bn;
+    while n != 0 {
+        let k = n.tzcnt();
+        score -= mg_pawn_table[k as usize];
+        n = n.blsr();
+    }*/
+    score += KING_POS_MIDDLE[game.wk.tzcnt() as usize] - KING_POS_MIDDLE[game.bk.tzcnt() as usize];
+    score 
 }
