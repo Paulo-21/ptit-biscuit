@@ -7,7 +7,8 @@ use crate::eval::eval;
 use crate::search::*;
 use crate::table_transposition::TranspositionTable;
 use crate::perft::*;
-use crate::searchTools::SearchTools;
+use crate::search_tools::SearchTools;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub fn uci () {
     let mut game = Game::default();
@@ -266,9 +267,9 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -
     let lock2 = lock.clone();
     let game1 = *game;
     let mut _stop = false;
-    let arc = Arc::new(_stop);
+    let arc = Arc::new(AtomicBool::new(false));
     let arc2 = arc.clone();
-    let _t1 = thread::spawn(move || {
+    let t1 = thread::spawn(move || {
         let tt = TranspositionTable::with_memory(8<<25);
         let mut tool = SearchTools::new(tt, arc2);
         let mut nb_node : u64 = 0;
@@ -284,16 +285,16 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -
             let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
             let out = convert_move_to_str(a, b, p);
             eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}, tt hits : {}", d , out, firstguess, nb_node, tool.tt.stat_hint);
-            if *tool.timeover
+            if tool.timeover.load(Ordering::Relaxed)
             { break; }
         }
         //res = convert_custum_move((bmove, Piece::QUEEN));
         *lock2.write().unwrap() = convert_custum_move((bmove, Piece::NONE));
     });
 
-    thread::sleep(Duration::from_secs(5));
-    _stop = true;
-    
+    thread::sleep(Duration::from_secs(3));
+    arc.store(true, Ordering::Relaxed);
+    t1.join();
     return *lock.read().unwrap();
 }
 fn _compute_pvs(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64 , u64, Piece) {

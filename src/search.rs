@@ -5,6 +5,7 @@ use crate::search_tools::SearchTools;
 use crate::table_transposition::TranspositionTable;
 use crate::table_transposition::NodeType;
 use std::cmp::{ max, min };
+use std::sync::atomic::Ordering;
 
 pub fn alpha_beta(game : &mut Game, depth : i8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
@@ -519,9 +520,9 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
     //eprintln!("{}", convert_custum_to_str(best_move));
     (value, best_move)
 }
-pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (i32, u64) {
-    if *tool.timeover {
-        return (0,0);
+pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
+    if tool.timeover.load(Ordering::Relaxed) {
+        return (None,0);
     }
     *nb_node+=1;
     let alpha_orgi = alpha;
@@ -533,14 +534,14 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut
         
         if tt_entry.depth >= depth {
             match tt_entry.node_type {
-                NodeType::PV =>  return (tt_entry.eval, tt_entry.bestmove),
+                NodeType::PV =>  return (Some(tt_entry.eval), tt_entry.bestmove),
                 NodeType::ALL => alpha = max(alpha, tt_entry.eval),
                 NodeType::CUT => { 
                     beta = min(beta, tt_entry.eval);
                 }
             }
             if alpha >= beta {
-                return (tt_entry.eval, tt_entry.bestmove);
+                return (Some(tt_entry.eval), tt_entry.bestmove);
             }
         }        
         hash_move = tt_entry.bestmove;
@@ -554,7 +555,7 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut
         if !game.white_to_play {
             eval *= -1;
         };
-        return (eval,0);
+        return (Some(eval),0);
     };
     
     //println!("{} {}", hash_moves.len() , legal_moves.len());
@@ -580,17 +581,23 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut
         if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
         else { compute_move_b_hash((a, b, prom), &mut game1); }
         game1.white_to_play^=true;
-        let (score, _b_move) = alpha_beta_neg_tt_best_time(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
-        if value < -score {
-            value = -score;
-            best_move = moveto_play.0;
+        let (s, _b_move) = alpha_beta_neg_tt_best_time(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        match s {
+            Some(score) => {
+                if value < -score {
+                    value = -score;
+                    best_move = moveto_play.0;
+                }
+                alpha = max(alpha, value);
+                //value = max(value, );
+                if alpha >= beta {
+                    break;
+                }
+                i+=1;
+            },
+            None =>{ continue;}
         }
-        alpha = max(alpha, value);
-        //value = max(value, );
-        if alpha >= beta {
-            break;
-        }
-        i+=1;
+        
     }
     let node_t;
     if value <= alpha_orgi {
@@ -604,7 +611,7 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut
     }
     tool.tt.set(game.hash, depth, value, best_move, node_t);
     //eprintln!("{}", convert_custum_to_str(best_move));
-    (value, best_move)
+    (Some(value), best_move)
 }
 pub fn mtd_f(game : &Game, f : i32, depth : i8, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (i32, u64) {
     //eprintln!("MTD-F inside {} {}", depth, f);
@@ -616,12 +623,21 @@ pub fn mtd_f(game : &Game, f : i32, depth : i8, tool : &mut SearchTools, nb_node
     loop  {
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
-        (g, bmove) = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
-        
-        if g < beta { upperbound = g } else { lowerbound = g};
-        if lowerbound >= upperbound {
-            break;
+        let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
+        match x {
+            Some(s) => {
+                g = s;
+                bmove = i;
+                if g < beta { upperbound = g } else { lowerbound = g};
+                if lowerbound >= upperbound {
+                    break;
+                }
+            },
+            None => {
+                break;
+            }
         }
+        
     }
     (g, bmove)
 }
