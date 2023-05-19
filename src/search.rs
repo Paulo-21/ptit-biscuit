@@ -1,5 +1,6 @@
 use crate::chess::*;
 use crate::eval::*;
+use crate::searchTools::SearchTools;
 //use crate::table_transposition::Transposition;
 use crate::table_transposition::TranspositionTable;
 use crate::table_transposition::NodeType;
@@ -518,7 +519,94 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : i8, mut alpha : i32, mut beta
     //eprintln!("{}", convert_custum_to_str(best_move));
     (value, best_move)
 }
-pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
+pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : i8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (i32, u64) {
+    if *tool.timeover {
+        return (0,0);
+    }
+    *nb_node+=1;
+    let alpha_orgi = alpha;
+    let mut hash_move = 0u64;
+    /* TT look up */
+    let mut best_move = 0u64;
+    let tt_entry = tool.tt.get(game.hash);
+    if tt_entry.hash == game.hash {
+        
+        if tt_entry.depth >= depth {
+            match tt_entry.node_type {
+                NodeType::PV =>  return (tt_entry.eval, tt_entry.bestmove),
+                NodeType::ALL => alpha = max(alpha, tt_entry.eval),
+                NodeType::CUT => { 
+                    beta = min(beta, tt_entry.eval);
+                }
+            }
+            if alpha >= beta {
+                return (tt_entry.eval, tt_entry.bestmove);
+            }
+        }        
+        hash_move = tt_entry.bestmove;
+    }
+    
+    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    
+    if depth == 0 || legal_moves.is_empty() {
+        let mut eval = eval(game, legal_moves.len() as i32);
+        //eval *= -1 * !game.white_to_play as i32;
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return (eval,0);
+    };
+    
+    //println!("{} {}", hash_moves.len() , legal_moves.len());
+    let mut value = i32::MIN>>1;
+    if hash_move != 0 {
+        legal_moves.push_front((hash_move, Piece::NONE));
+    }
+    if first != 0 {
+        legal_moves.push_front((first,Piece::NONE));
+        //eprintln!("Hello {}", convert_custum_to_str(first));
+    }
+    let mut i = 0;
+    for moveto_play in legal_moves{
+        if (hash_move == moveto_play.0 || first == moveto_play.0) && i > 2 {
+            continue;
+        }
+        
+        //eprintln!("MOVE : {}", convert_custum_to_str(moveto_play.0));
+        let (a,b, prom) = convert_custum_move(moveto_play);
+
+        let mut game1 = *game;
+
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (score, _b_move) = alpha_beta_neg_tt_best_time(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        if value < -score {
+            value = -score;
+            best_move = moveto_play.0;
+        }
+        alpha = max(alpha, value);
+        //value = max(value, );
+        if alpha >= beta {
+            break;
+        }
+        i+=1;
+    }
+    let node_t;
+    if value <= alpha_orgi {
+        node_t = NodeType::CUT;
+    }
+    else if value >= beta {
+        node_t = NodeType::ALL;
+    }
+    else {
+        node_t = NodeType::PV;
+    }
+    tool.tt.set(game.hash, depth, value, best_move, node_t);
+    //eprintln!("{}", convert_custum_to_str(best_move));
+    (value, best_move)
+}
+pub fn mtd_f(game : &Game, f : i32, depth : i8, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (i32, u64) {
     //eprintln!("MTD-F inside {} {}", depth, f);
     let (mut g, mut bmove) = (f,first);
     
@@ -528,7 +616,7 @@ pub fn mtd_f(game : &Game, f : i32, depth : i8, tt : &mut TranspositionTable, nb
     loop  {
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
-        (g, bmove) = alpha_beta_neg_tt_best(game, depth, beta-1, beta, tt , nb_node, bmove);
+        (g, bmove) = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
         
         if g < beta { upperbound = g } else { lowerbound = g};
         if lowerbound >= upperbound {
