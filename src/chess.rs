@@ -1339,10 +1339,10 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
             }
         }
         let possib = possibility_b(game);
-        if game.wking_never_move && game.wqueen_rook_never_move && (black | white) & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2)) == 0 {
+        if game.wking_never_move && game.wqueen_rook_never_move && (black | white) & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
             legal_moves.push_back(((4<<9)+(2<<1), Piece::KING));
         }
-        if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5)) == 0 {
+        if game.wking_never_move && game.wking_rook_never_move && (black | white) & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
             legal_moves.push_back(((4<<9)+(6<<1), Piece::KING));
         }
     }
@@ -1494,10 +1494,10 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
             }
         }
         let possiw = possibility_w(game);
-        if game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59)) == 0 {
+        if game.bking_never_move && game.bqueen_rook_never_move && (black | white) & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
             legal_moves.push_back(((60<<9) + (58<<1), Piece::KING));
         }
-        if game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+        if game.bking_never_move && game.bking_rook_never_move && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
             legal_moves.push_back(((60<<9) + (62<<1), Piece::KING));
         }
     }
