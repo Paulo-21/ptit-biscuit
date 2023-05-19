@@ -1,6 +1,6 @@
 use crate::chess::*;
 use crate::eval::*;
-use crate::searchTools::SearchTools;
+use crate::search_tools::SearchTools;
 //use crate::table_transposition::Transposition;
 use crate::table_transposition::TranspositionTable;
 use crate::table_transposition::NodeType;

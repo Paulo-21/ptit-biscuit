@@ -5,7 +5,7 @@ mod search;
 mod perft;
 mod table_transposition;
 mod zobrist;
-mod searchTools;
+mod search_tools;
 use uci::*;
 use std::env;
 
