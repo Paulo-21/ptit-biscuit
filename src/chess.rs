@@ -48,6 +48,32 @@ impl Game {
     pub fn black(&self) -> u64 {
         self.bp | self.bn | self.bb | self.br | self.bq | self.bk
     }
+    pub fn empty() -> Game {
+        let wp : u64 = 0;
+        let wn : u64 = 0;
+        let wb : u64 = 0;
+        let wr : u64 = 0;
+        let wq : u64 = 0;
+        let wk : u64 = 0;
+        let bp : u64 = 0;
+        let bn : u64 = 0;
+        let bb : u64 = 0;
+        let br : u64 = 0;
+        let bq : u64 = 0;
+        let bk : u64 = 0;
+
+        let game = Game {
+            wp, wn, wb, wr, wq, wk,
+            bp, bn, bb, br, bq, bk,
+            white_to_play : true,
+            en_passant : 0,
+            wking_castle : false, wqueen_castle : false,
+            bking_castle : false, bqueen_castle : false,
+            nb_coups : 0,
+            hash : 0
+        };
+        game
+    }
     
 }
 impl Default for Game {
