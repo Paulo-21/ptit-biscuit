@@ -78,22 +78,39 @@ fn input_go(command : Vec<&str>, game: &Game, tt : &mut TranspositionTable) {
     }
     match game.white_to_play {
         true => {
-            if wtime > 0 {
+            if wtime > 0 && winc > 0 {
+                if wtime < winc {
+                    move_time = (wtime as f32 *0.7) as i32;
+                }
+                else if wtime < (winc as f32*1.5) as i32  {
+                    move_time = (wtime as f32 *0.8) as i32;
+                }
+                else {
+                    move_time = wtime/25 + winc;
+                }
+            }
+            else if wtime > 0 {
                 move_time = wtime/25;
             }
-            if winc > 0 && winc > wtime {
-                move_time = (wtime as f32 *0.7) as i32;
-            }
-            if game.nb_coups < 4 && wtime > 0{
+            if game.nb_coups < 4 && wtime > 0 {
                 move_time = 4000;
             }
         },
         false => {
-            if btime > 0 {
-                move_time = btime/25;
+            if btime > 0 && binc > 0 {
+                if btime < binc {
+                    move_time = (btime as f32 *0.7) as i32;
+                }
+                else if btime < (binc as f32*1.5) as i32  {
+                    move_time = (btime as f32 *0.8) as i32;
+                }
+                else {
+                    move_time = btime/25 + binc;
+                }
+
             }
-            if binc > 0 && binc > btime {
-                move_time = (btime as f32 *0.7) as i32;
+            else if wtime > 0 {
+                move_time = wtime/25;
             }
             if game.nb_coups < 4 && btime > 0 {
                 move_time = 4000;
