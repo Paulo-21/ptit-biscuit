@@ -513,7 +513,15 @@ pub fn compute_move_w(chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
             if game.bp & b != 0 {  game.bp &= !b; return 1;}
             else if game.bn & b != 0 { game.bn &= !b; return 3;}
             else if game.bb & b != 0 { game.bb &= !b; return 3;}
-            else if game.br & b != 0 { game.br &= !b; return 5;}
+            else if game.br & b != 0 { 
+                if square_b == 63 {
+                    game.bking_castle = false;
+                }
+                else if square_b == 56 {
+                    game.bqueen_castle = false;
+                }
+                game.br &= !b; return 5;
+            }
             else if game.bq & b != 0 { game.bq &= !b; return 11;}
         }
         0
@@ -631,7 +639,15 @@ pub fn compute_move_w_thrust(chessmove : (u64, u64, Piece), game : &mut Game) ->
             if game.bp & b != 0 {  game.bp &= !b; return 1;}
             else if game.bn & b != 0 { game.bn &= !b; return 3;}
             else if game.bb & b != 0 { game.bb &= !b; return 3;}
-            else if game.br & b != 0 { game.br &= !b; return 5;}
+            else if game.br & b != 0 {
+                if square_b == 63 {
+                    game.bking_castle = false;
+                }
+                else if square_b == 56 {
+                    game.bqueen_castle = false;
+                }
+                game.br &= !b; return 5;
+            }
             else if game.bq & b != 0 { game.bq &= !b; return 11;}
         //}
         0
@@ -773,6 +789,14 @@ pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> 
                 game.hash ^= PIECE_SQUARE[8][square_b as usize];
                 game.bb &= !b; return 3;}
             else if game.br & b != 0 { 
+                    if square_b == 63 {
+                        game.bking_castle = false;
+                        game.hash ^= CASTLING_RIGHT[2];
+                    }
+                    else if square_b == 56 {
+                        game.bqueen_castle = false;
+                        game.hash ^= CASTLING_RIGHT[3];
+                    }
                 game.hash ^= PIECE_SQUARE[9][square_b as usize];
                 game.br &= !b; return 5;}
             else if game.bq & b != 0 { 
@@ -905,7 +929,15 @@ pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
             else if game.wb & b != 0 { 
                 game.hash ^= PIECE_SQUARE[2][square_b as usize];
                 game.wb &= !b; return 3;}
-            else if game.wr & b != 0 { 
+            else if game.wr & b != 0 {
+                if square_b == 7 {
+                    game.wking_castle = false;
+                    game.hash ^= CASTLING_RIGHT[0];
+                }
+                else if square_b == 0 {
+                    game.wqueen_castle = false;
+                    game.hash ^= CASTLING_RIGHT[1];
+                }
                 game.hash ^= PIECE_SQUARE[3][square_b as usize];
                 game.wr &= !b; return 5;}
             else if game.wq & b != 0 {
@@ -1018,7 +1050,15 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
             if game.wp & b != 0 { game.wp &= !b; return 1;}
             else if game.wn & b != 0 { game.wn &= !b; return 3;}
             else if game.wb & b != 0 { game.wb &= !b; return 3;}
-            else if game.wr & b != 0 { game.wr &= !b; return 5;}
+            else if game.wr & b != 0 { 
+                if square_b == 0 {
+                    game.wking_castle = false;
+                }
+                else if square_b == 7 {
+                    game.wqueen_castle = false;
+                }
+                game.wr &= !b; return 5;
+            }
             else if game.wq & b != 0 { game.wq &= !b; return 11;}
         }
         0
@@ -1127,7 +1167,15 @@ pub fn compute_move_b_thrust(chessmove : (u64,u64,Piece), game :&mut Game) -> i8
             if game.wp & b != 0 { game.wp &= !b; return 1;}
             else if game.wn & b != 0 { game.wn &= !b; return 3;}
             else if game.wb & b != 0 { game.wb &= !b; return 3;}
-            else if game.wr & b != 0 { game.wr &= !b; return 5;}
+            else if game.wr & b != 0 {
+                if square_b == 7 {
+                    game.wking_castle = false;
+                }
+                else if square_b == 0 {
+                    game.wqueen_castle = false;
+                }
+                game.wr &= !b; return 5;
+            }
             else if game.wq & b != 0 { game.wq &= !b; return 11;}
         //}
         0
