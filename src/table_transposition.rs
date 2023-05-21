@@ -16,13 +16,13 @@ pub enum NodeType {
 #[derive(Debug, Clone, Copy)]
 pub struct Transposition {
     pub hash : u64,
-    pub depth : i8,
+    pub depth : u8,
     pub eval : i32,
     pub bestmove : u64,
     pub node_type : NodeType
 }
 impl Transposition {
-    pub fn new(hash : u64, depth : i8, eval : i32, bestmove : u64, node_type : NodeType) -> Transposition {
+    pub fn new(hash : u64, depth : u8, eval : i32, bestmove : u64, node_type : NodeType) -> Transposition {
         Transposition {
             hash, depth, eval, bestmove, node_type,
         }
@@ -50,7 +50,7 @@ impl TranspositionTable {
             mask : n-1
         }
     }
-    pub fn set(&mut self , hash : u64, depth : i8, eval : i32, bestmove : u64, node_type: NodeType) {
+    pub fn set(&mut self , hash : u64, depth : u8, eval : i32, bestmove : u64, node_type: NodeType) {
         let t = Transposition::new(hash, depth, eval, bestmove, node_type);
         let k = hash as usize % self.table.len();
         self.table[k] = t;

@@ -1218,6 +1218,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
     let occupied = black | white;
     let mut legal_moves = VecDeque::<(u64, Piece)>::new();
+    //let mut legal_moves = VecDeque::<(u64, Piece)>::with_capacity(25);
     
     if side_w { //White Possibility
         //Pions Possibility

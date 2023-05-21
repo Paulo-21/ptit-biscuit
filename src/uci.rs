@@ -29,19 +29,7 @@ pub fn uci () {
                 game = input_position(command);
             },
             "go" => {
-                
-                tt = TranspositionTable::with_memory(8<<22);
-                let (a, b, prom) = compute(&game, &mut tt);
-                let bestmovea = convert_square_to_move(a);
-                let bestmoveb = convert_square_to_move(b);
-                match prom {
-                    Piece::NONE => {
-                        println!("bestmove {}{}", bestmovea, bestmoveb);
-                    },
-                    _ => {
-                        println!("bestmove {}{}q", bestmovea, bestmoveb);
-                    }
-                }
+                input_go(command, &game, &mut tt);
             },
             "perft" => {
                 let game = Game::default();
@@ -64,10 +52,88 @@ pub fn uci () {
         }
     }
 }
-fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+
+fn input_go(command : Vec<&str>, game: &Game, tt : &mut TranspositionTable) {
+    let mut depth = 100 as u8;
+    let mut wtime = 0;
+    let mut btime = 0;
+    let mut winc = 0;
+    let mut binc = 0;
+    let mut move_time = 3000;
+    if let Some(pos) =  command.iter().position(|&x| x == "depth") {
+        depth = command[pos+1].parse::<u8>().unwrap();
+        move_time = 0;
+    }
+    if let Some(pos) =  command.iter().position(|&x| x == "wtime") {
+        wtime = command[pos+1].parse::<i32>().unwrap();
+    }
+    if let Some(pos) =  command.iter().position(|&x| x == "btime") {
+        btime = command[pos+1].parse::<i32>().unwrap();
+    }
+    if let Some(pos) =  command.iter().position(|&x| x == "winc") {
+        winc = command[pos+1].parse::<i32>().unwrap();
+    }
+    if let Some(pos) =  command.iter().position(|&x| x == "binc") {
+        binc = command[pos+1].parse::<i32>().unwrap();
+    }
+    match game.white_to_play {
+        true => {
+            if wtime > 0 {
+                move_time = wtime/25;
+            }
+            if winc > 0 && winc > wtime {
+                move_time = (wtime as f32 *0.7) as i32;
+            }
+            if game.nb_coups < 4 && wtime > 0{
+                move_time = 4000;
+            }
+        },
+        false => {
+            if btime > 0 {
+                move_time = btime/25;
+            }
+            if binc > 0 && binc > btime {
+                move_time = (btime as f32 *0.7) as i32;
+            }
+            if game.nb_coups < 4 && btime > 0 {
+                move_time = 4000;
+            }
+        }
+    }
+    if let Some(pos) =  command.iter().position(|&x| x == "movetime") {
+        move_time = command[pos+1].parse::<i32>().unwrap();
+    }
+    eprintln!("{}, {}", depth, move_time);
+    let (a, b, prom) = compute(game, depth , move_time, tt);
+    let bestmovea = convert_square_to_move(a);
+    let bestmoveb = convert_square_to_move(b);
+    match prom {
+        Piece::NONE => {
+            println!("bestmove {}{}", bestmovea, bestmoveb);
+        },
+        _ => {
+            println!("bestmove {}{}q", bestmovea, bestmoveb);
+        }
+    }
+}
+
+/*fn a () {
+    let tt = TranspositionTable::with_memory(8<<22);
+    let (a, b, prom) = compute(&game, &mut tt);
+    let bestmovea = convert_square_to_move(a);
+    let bestmoveb = convert_square_to_move(b);
+    match prom {
+        Piece::NONE => {
+            println!("bestmove {}{}", bestmovea, bestmoveb);
+        },
+        _ => {
+            println!("bestmove {}{}q", bestmovea, bestmoveb);
+        }
+    }
+}*/
+fn compute(game : &Game, depth : u8, move_time : i32, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("START Compute");
     let now = Instant::now();
-    let depth = 7;
     eprintln!("Pronfondeur : {depth}");
     //draw_the_game_state(game);
     //compute_negamax(game);
@@ -77,7 +143,7 @@ fn compute(game : &Game, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     //let res = compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth , tt);
     //let res = compute_pvs_iter(game, depth , tt);
-    let res = compute_mdt_f_iter(game, depth, tt);
+    let res = compute_mdt_f_iter(game, depth, move_time,  tt);
 
     eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());
     res
@@ -99,7 +165,7 @@ fn input_position(commande : Vec<&str>) -> Game {
         get_bitboard_from_fen(commande)
     }
     else {
-        get_bitboard_from_startpos(commande)
+        Game::default()
         
     }
 }
@@ -186,7 +252,7 @@ fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
     game
 }
 
-fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
+fn compute_minimax(game : &Game, depth : u8) -> (u64 , u64) {
     eprintln!("MINIMAX");
     let mut nb_node = 0u64;
     let maximizing_player = game.white_to_play;
@@ -224,7 +290,7 @@ fn compute_minimax(game : &Game, depth : i8) -> (u64 , u64) {
     (a,b)
 }
 
-fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
+fn compute_alpha_beta(game : &Game, depth : u8) -> (u64 , u64, Piece) {
     eprintln!("ALPHA BETA");
     let alpha = i32::MIN;
     let beta = i32::MAX;
@@ -261,7 +327,7 @@ fn compute_alpha_beta(game : &Game, depth : i8) -> (u64 , u64, Piece) {
     (a,b, prom)
 }
 
-fn compute_alpha_beta_neg(game : &Game, depth : i8) -> (u64, u64, Piece) {
+fn compute_alpha_beta_neg(game : &Game, depth : u8) -> (u64, u64, Piece) {
     eprintln!("NEGAMAX");
     let mut nb_node = 0u64;
     let legal_moves = get_legal_move(game.white_to_play, game);
@@ -286,10 +352,10 @@ fn compute_alpha_beta_neg(game : &Game, depth : i8) -> (u64, u64, Piece) {
     }
     eprintln!();
     let (a, b, prom ) = convert_custum_move(bestmove);
-    println!("NB nodes : {nb_node}");
+    eprintln!("NB nodes : {nb_node}");
     (a,b, prom)
 }
-fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn compute_alpha_beta_neg_tt(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("NEGAMAX TT");
     let mut nb_node = 0u64;
     let legal_moves = get_legal_move(game.white_to_play, game);
@@ -319,7 +385,7 @@ fn compute_alpha_beta_neg_tt(game : &Game, depth : i8, tt : &mut TranspositionTa
 }
 
 
-fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("MTD-F");
     let mut res = (0,0,Piece::NONE);
     let lock = Arc::new(RwLock::new(res));
@@ -328,35 +394,76 @@ fn compute_mdt_f_iter(game : &Game, depth : i8, tt1 : &mut TranspositionTable) -
     let mut _stop = false;
     let arc = Arc::new(AtomicBool::new(false));
     let arc2 = arc.clone();
-    let t1 = thread::spawn(move || {
+    if move_time == 0 {
         let tt = TranspositionTable::with_memory(8<<25);
         let mut tool = SearchTools::new(tt, arc2);
         let mut nb_node : u64 = 0;
         /*let legal_move = get_legal_move(game.white_to_play, &game1);
         for l in legal_move {
             eprint!("{}, ", convert_custum_to_str(l.0));
-        }*/
-        eprintln!();
+        }
+        eprintln!();*/
+        
         let (mut firstguess, mut bmove) = (0,0);
-        nb_node = 0;
         for d in 1..depth+1 {
-            (firstguess, bmove) = mtd_f(&game1, firstguess, d, &mut tool, &mut nb_node, bmove);
+            nb_node = 0;
+            let (firstguess2, bmove2) = mtd_f(&game1, firstguess, d, &mut tool, &mut nb_node, bmove);
+            match firstguess2 {
+                Some(e) => {
+                    bmove = bmove2;
+                    firstguess = e;
+                },
+                None => { }
+            }
             let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
             let out = convert_move_to_str(a, b, p);
             eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}, tt hits : {}", d , out, firstguess, nb_node, tool.tt.stat_hint);
-            if tool.timeover.load(Ordering::Relaxed)
-            { break; }
+            res = convert_custum_move((bmove, Piece::NONE));
         }
-        //res = convert_custum_move((bmove, Piece::QUEEN));
-        *lock2.write().unwrap() = convert_custum_move((bmove, Piece::NONE));
-    });
-
-    thread::sleep(Duration::from_secs(3));
-    arc.store(true, Ordering::Relaxed);
-    t1.join();
-    return *lock.read().unwrap();
+        return res;
+    }
+    else {
+        let t1 = thread::spawn(move || {
+            let tt = TranspositionTable::with_memory(8<<25);
+            let mut tool = SearchTools::new(tt, arc2);
+            let mut nb_node : u64 = 0;
+            /*let legal_move = get_legal_move(game.white_to_play, &game1);
+            for l in legal_move {
+                eprint!("{}, ", convert_custum_to_str(l.0));
+            }
+            eprintln!();*/
+            
+            let (mut firstguess, mut bmove) = (0,0);
+            for d in 1..depth+1 {
+                nb_node = 0;
+                let (firstguess2, bmove2) = mtd_f(&game1, firstguess, d, &mut tool, &mut nb_node, bmove);
+                match firstguess2 {
+                    Some(e) => {
+                        bmove = bmove2;
+                        firstguess = e;
+                    },
+                    None => { }
+                }
+                let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
+                let out = convert_move_to_str(a, b, p);
+                eprintln!(" depth : {}, current : {}, eval : {}, nbNode : {}, tt hits : {}", d , out, firstguess, nb_node, tool.tt.stat_hint);
+                if tool.timeover.load(Ordering::Relaxed)
+                { break; }
+            }
+            //res = convert_custum_move((bmove, Piece::QUEEN));
+            *lock2.write().unwrap() = convert_custum_move((bmove, Piece::NONE));
+        });
+        
+        thread::sleep(Duration::from_millis(move_time as u64));
+        arc.store(true, Ordering::Relaxed);
+        t1.join().unwrap();
+        return *lock.read().unwrap();
+    }
+    
 }
-fn _compute_pvs(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64 , u64, Piece) {
+
+
+fn _compute_pvs(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64 , u64, Piece) {
     eprintln!("PRINCIPAL VARIATION SEARCH");
     let alpha = i32::MIN>>1;
     let beta = i32::MAX>>1;
@@ -385,7 +492,7 @@ fn _compute_pvs(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64 
     (a,b, prom)
 }
 
-fn _compute_pvs_iter(game : &Game, depth : i8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn _compute_pvs_iter(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("PFS Iter");
     let mut nb_node : u64 = 0;
     let (mut firstguess, mut bmove) = (0,0);
