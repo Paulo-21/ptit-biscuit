@@ -7,7 +7,7 @@ use crate::table_transposition::NodeType;
 use std::cmp::{ max, min };
 use std::sync::atomic::Ordering;
 
-pub fn alpha_beta(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
+pub fn _alpha_beta(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
     let legal_move = get_legal_move(game.white_to_play, game);
     if depth == 0 || legal_move.is_empty() {
@@ -23,7 +23,7 @@ pub fn alpha_beta(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, n
             
             game1.white_to_play ^= true;
             compute_move_b((a, b, prom), &mut game1);
-            value = min(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
+            value = min(value, _alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
             if alpha >= value {
                 return value;
             }
@@ -38,7 +38,7 @@ pub fn alpha_beta(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, n
             compute_move_w((a, b, prom), &mut game1);
             game1.white_to_play ^= true;
             
-            value = max(value, alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
+            value = max(value, _alpha_beta(&mut game1, depth-1, alpha, beta, nb_node));
             if value >= beta {
                 return value;
             }
@@ -48,7 +48,7 @@ pub fn alpha_beta(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, n
     value
 }
 
-pub fn minimax(game: &mut Game, depth : u8, maximizing_player : bool, nb_node : &mut u64) -> i32 {
+pub fn _minimax(game: &mut Game, depth : u8, maximizing_player : bool, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
@@ -64,7 +64,7 @@ pub fn minimax(game: &mut Game, depth : u8, maximizing_player : bool, nb_node : 
             compute_move_w((a, b, prom), &mut game1);
             
             game1.white_to_play ^= true;
-            value = max(value, minimax(&mut game1, depth-1, false, nb_node));
+            value = max(value, _minimax(&mut game1, depth-1, false, nb_node));
         }
     }
     else {
@@ -75,13 +75,13 @@ pub fn minimax(game: &mut Game, depth : u8, maximizing_player : bool, nb_node : 
             compute_move_b((a, b,prom), &mut game1);
 
             game1.white_to_play ^= true;
-            value = min(value, minimax(&mut game1, depth-1, true, nb_node));
+            value = min(value, _minimax(&mut game1, depth-1, true, nb_node));
         }
     }
     value
 }
 
-pub fn pvs(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64) -> i32 {
+pub fn _pvs(game : &mut Game, depth : u8, mut alpha:i32, beta : i32, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
@@ -104,12 +104,12 @@ pub fn pvs(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node 
         }
         if first {
             first = false;
-            score = -pvs(&mut game1, depth- 1, -beta, -alpha, nb_node);
+            score = -_pvs(&mut game1, depth- 1, -beta, -alpha, nb_node);
         }
         else {
-            score = -pvs(&mut game1, depth- 1, -alpha-1, -alpha, nb_node);
+            score = -_pvs(&mut game1, depth- 1, -alpha-1, -alpha, nb_node);
             if alpha < score && score < beta {
-                score = -pvs(&mut game1, depth- 1, -beta, -score, nb_node);
+                score = -_pvs(&mut game1, depth- 1, -beta, -score, nb_node);
             }
         }
         alpha = max(alpha, score);
@@ -120,7 +120,7 @@ pub fn pvs(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node 
     alpha
 }
 
-pub fn pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable) -> i32 {
+pub fn _pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -134,7 +134,7 @@ pub fn pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_no
             return tt_entry.eval;
         }
     }
-    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
@@ -160,15 +160,15 @@ pub fn pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_no
         }
         if first {
             first = false;
-            score = -pvs_tt(&mut game1, depth- 1, -beta, -alpha, nb_node, tt);
+            score = -_pvs_tt(&mut game1, depth- 1, -beta, -alpha, nb_node, tt);
             bestmove = moveto.0;
         }
         else {
-            score = -pvs_tt(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt);
+            score = -_pvs_tt(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt);
             
             if alpha < score && score < beta {
                 bestmove = moveto.0;
-                score = -pvs_tt(&mut game1, depth- 1, -beta, -score, nb_node, tt);
+                score = -_pvs_tt(&mut game1, depth- 1, -beta, -score, nb_node, tt);
             }
         }
         if score > alpha {
@@ -194,7 +194,7 @@ pub fn pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_no
 
     alpha
 }
-pub fn pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -237,15 +237,15 @@ pub fn pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_n
         }
         if first {
             first = false;
-            score = -pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
+            score = -_pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
             bestmove = moveto.0;
         }
         else {
-            score = -pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
+            score = -_pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
             
             if alpha < score && score < beta {
                 bestmove = moveto.0;
-                score = -pvs(&mut game1, depth- 1, -beta, -score, nb_node);
+                score = -_pvs(&mut game1, depth- 1, -beta, -score, nb_node);
             }
         }
         if score > alpha {
@@ -271,7 +271,7 @@ pub fn pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_n
 
     alpha
 }
-pub fn pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+pub fn _pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -314,15 +314,15 @@ pub fn pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32,
         }
         if first {
             first = false;
-            score = -pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
+            score = -_pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
             bestmove = moveto.0;
         }
         else {
-            score = -pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
+            score = -_pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
             
             if alpha < score && score < beta {
                 bestmove = moveto.0;
-                score = -pvs(&mut game1, depth- 1, -beta, -score, nb_node);
+                score = -_pvs(&mut game1, depth- 1, -beta, -score, nb_node);
             }
         }
         if score > alpha {
@@ -348,7 +348,7 @@ pub fn pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32,
 
     alpha
 }
-pub fn alpha_beta_neg(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, nb_node : &mut u64) -> i32 {
+pub fn _alpha_beta_neg(game: &Game, depth : u8, mut alpha : i32, beta : i32, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
@@ -368,7 +368,7 @@ pub fn alpha_beta_neg(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, 
         else { compute_move_b((a, b, prom), &mut game1); }
         game1.white_to_play^=true;
         
-        value = max(value, -alpha_beta_neg(&mut game1, depth-1, -beta, -alpha, nb_node));
+        value = max(value, -_alpha_beta_neg(&mut game1, depth-1, -beta, -alpha, nb_node));
         /*if value >= beta {
             return value;
         }*/
@@ -380,7 +380,7 @@ pub fn alpha_beta_neg(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, 
     value
 }
 
-pub fn alpha_beta_neg_tt(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64) -> i32 {
+pub fn _alpha_beta_neg_tt(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64) -> i32 {
     *nb_node+=1;
     let alpha_orgi = alpha;
     /* TT look up */
@@ -413,7 +413,7 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : u8, mut alpha : i32, mut beta : i3
         if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
         else { compute_move_b_hash((a, b, prom), &mut game1); }
         game1.white_to_play^=true;
-        value = max(value, -alpha_beta_neg_tt(&mut game1, depth-1, -beta, -alpha, tt, nb_node));
+        value = max(value, -_alpha_beta_neg_tt(&mut game1, depth-1, -beta, -alpha, tt, nb_node));
         alpha = max(alpha, value);
         if alpha >= beta {
             break;
@@ -435,7 +435,7 @@ pub fn alpha_beta_neg_tt(game: &Game, depth : u8, mut alpha : i32, mut beta : i3
 
     value
 }
-pub fn alpha_beta_neg_tt_best(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
+pub fn _alpha_beta_neg_tt_best(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tt : &mut TranspositionTable, nb_node : &mut u64, first : u64) -> (i32, u64) {
     
     *nb_node+=1;
     let alpha_orgi = alpha;
@@ -494,7 +494,7 @@ pub fn alpha_beta_neg_tt_best(game: &Game, depth : u8, mut alpha : i32, mut beta
         if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
         else { compute_move_b_hash((a, b, prom), &mut game1); }
         game1.white_to_play^=true;
-        let (score, _b_move) = alpha_beta_neg_tt_best(&mut game1, depth-1, -beta, -alpha, tt, nb_node, 0);
+        let (score, _b_move) = _alpha_beta_neg_tt_best(&mut game1, depth-1, -beta, -alpha, tt, nb_node, 0);
         if value < -score {
             value = -score;
             best_move = moveto_play.0;

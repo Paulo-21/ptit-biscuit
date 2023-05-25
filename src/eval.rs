@@ -42,27 +42,26 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
     if game.nb_coups < 13 {
         score += ((wpo & SQUARE_CENTER).popcnt() * 3 ) as i32;
         score -= ((bpo & SQUARE_CENTER).popcnt()  * 3 )as i32;
-        score += eval_begin();
+        score += _eval_begin();
     }
     else if game.nb_coups < 30 {
-        score += eval_middle_game(game);
+        score += _eval_middle_game(game);
     }
     else {
-        score += eval_late_game(game);
+        score += _eval_late_game(game);
     }
     score*/
 
     pesto_eval(game)
 }
 
-fn eval_begin() -> i32 {
-    0
-}
-fn eval_late_game(game : &Game) -> i32 {
+
+fn _eval_late_game(game : &Game) -> i32 {
     let k = _KING_POS_END[flip(game.wk).tzcnt() as usize] - _KING_POS_END[game.bk.tzcnt() as usize];
     k as i32
 }
-fn eval_middle_game(game : &Game) -> i32 {
+
+fn _eval_middle_game(game : &Game) -> i32 {
     let mut n = 0;
     let mut score = 0;
     n = game.wp;
@@ -358,7 +357,7 @@ static MG_VALUE : [i32;6] = [ 82, 337, 365, 477, 1025,  0];
 
 static EG_VALUE : [i32;6] = [ 94, 281, 297, 512,  936,  0];
 
-pub fn flip_vertical( x : u64) -> u64 {
+pub fn _flip_vertical( x : u64) -> u64 {
     return  ( (x << 56)                           ) |
             ( (x << 40) & (0x00ff000000000000) ) |
             ( (x << 24) & (0x0000ff0000000000) ) |
