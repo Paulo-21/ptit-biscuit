@@ -657,7 +657,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
         //KING
         let possib = possibility_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !possib & !white;// & !pin_hv & !pin_d12;
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !possib & !white & checkmask;// & !pin_hv & !pin_d12;
         while p != 0 {
             legal_moves.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
@@ -668,7 +668,6 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(6<<1));
         }
-        
     }
     else { //BLACK
         let checkmask = get_checked_mask_b(game);
@@ -781,7 +780,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
         //KING
         let possiw = possibility_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !possiw & !black & !pin_hv & !pin_d12;
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !possiw & !black & checkmask;
         while p != 0 {
             legal_moves.push((game.bk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
