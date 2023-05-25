@@ -2090,7 +2090,7 @@ pub fn get_legal_move(side_w : bool, game : &Game) -> VecDeque<(u64, Piece)> {
     legal_moves
 }
 
-pub fn print_custum_move(a_move : (u64,Piece)) {
+pub fn _print_custum_move(a_move : (u64,Piece)) {
     let a = a_move.0>>9;
     let b = (a_move.0 & 510)>>1;
     if a_move.0 & 1 == 1 {
@@ -2100,7 +2100,7 @@ pub fn print_custum_move(a_move : (u64,Piece)) {
         println!("{}{} {:?}", convert_square_to_move(a), convert_square_to_move(b), a_move.1);
     }
 }
-pub fn print_custum_move2(a_move : u64) {
+pub fn _print_custum_move2(a_move : u64) {
     let a = a_move>>9;
     let b = (a_move & 510)>>1;
     if a_move & 1 == 1 {
