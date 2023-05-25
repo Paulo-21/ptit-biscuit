@@ -38,7 +38,18 @@ pub fn uci () {
                 let mut i = 1;
                 loop {
                     let now = Instant::now();
-                    println!("Perft <{i}> : {} {} milliseconde", perft(game, i), now.elapsed().as_millis());
+                    let nb_node = perft(game, i) as u128;
+                    let time = now.elapsed().as_millis();
+                    let nps = nb_node.checked_div(time);
+                    let nps_str = match nps {
+                        Some(x) =>{
+                            (x*1000).to_string()
+                        },
+                        None => {
+                            "INF".to_string()
+                        }
+                    };
+                    println!("Perft <{i}> : {} {} milliseconde, {} Nps", nb_node, time , nps_str);
                     i+=1;
                 }
             },
