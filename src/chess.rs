@@ -81,7 +81,7 @@ impl Default for Game {
     }
 }
 
-pub fn convert_square_to_move(a_move : u64) -> String{
+pub fn convert_square_to_move(a_move : u64) -> String {
     let b = (a_move / 8) as u8;
     let a:u8 = (a_move % 8) as u8;
     let f = (b'a' + a ) as char;
@@ -115,12 +115,8 @@ static ANTIDIAG_MASKS : [u64;15] = [
 	0x8040201008040201, 0x4020100804020100, 0x2010080402010000, 0x1008040201000000,
 	0x804020100000000, 0x402010000000000, 0x201000000000000, 0x100000000000000
 ];
-static m1  :u64 = 0u64.wrapping_sub(1);
-static a2a7:u64 = 0x0001010101010100u64;
-static b2g7:u64 = 0x0040201008040200u64;
-static h1b7:u64 = 0x0002040810204080u64;
 //pub static SQUARE_CENTER : u64 = 103481868288;
-pub static SQUARE_CENTER : u64 = 0x1818000000;
+pub static _SQUARE_CENTER : u64 = 0x1818000000;
 
 lazy_static! {
     static ref FIRST_RANK_ATTACKS: [[u64; 8]; 64] = {
@@ -205,7 +201,7 @@ pub fn array_to_bitboard(chessboard : [[char;8]; 8], wp:&mut u64, wn:&mut u64, w
         }
     }
 }
-pub fn draw_the_game_state(game : &Game) {
+pub fn _draw_the_game_state(game : &Game) {
     eprintln!("GAME STATE");
     eprintln!("WPAWN");
     _draw_bitboard(game.wp);
@@ -328,90 +324,90 @@ pub fn convert_string_to_bitboard(binary:usize) -> u64 {
     1<<binary
 }
 pub fn _get_pinned_b(game : &Game) -> u64 {
-    let occupiedBB = game.occupied();
-    let ownPieces = game.black();
-    let squareOfKing = game.bk.tzcnt();
+    let occupied_bb = game.occupied();
+    let own_pieces = game.black();
+    let square_of_king = game.bk.tzcnt();
     let mut pinned = 0;
-    let mut pinner = xrayRookAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wr | game.wq);
+    let mut pinner = xray_rook_attacks(occupied_bb, own_pieces, square_of_king) & (game.wr | game.wq);
     //_draw_bitboard(pinner);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
         pinner = pinner.blsr();
     }
-    pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wb | game.wq);
+    pinner = xray_bishop_attacks(occupied_bb, own_pieces, square_of_king) & (game.wb | game.wq);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
         pinner = pinner.blsr();
     }
     pinned
 }
 pub fn get_pinned_mask_b(game : &Game) -> (u64,u64) {
-    let occupiedBB = game.occupied();
-    let ownPieces = game.black();
-    let squareOfKing = game.bk.tzcnt();
+    let occupied_bb = game.occupied();
+    let own_pieces = game.black();
+    let square_of_king = game.bk.tzcnt();
     //let mut pinned = 0;
     let mut pinned_mask_hv = 0;
     let mut pinned_mask_d12 = 0;
-    let mut pinner = xrayRookAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wr | game.wq);
+    let mut pinner = xray_rook_attacks(occupied_bb, own_pieces, square_of_king) & (game.wr | game.wq);
     //_draw_bitboard(pinner);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
-        pinned_mask_hv |= REC_TABLE[sq  as usize][squareOfKing  as usize] | (1<<sq);
+        //pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
+        pinned_mask_hv |= REC_TABLE[sq  as usize][square_of_king  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
-    pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wb | game.wq);
+    pinner = xray_bishop_attacks(occupied_bb, own_pieces, square_of_king) & (game.wb | game.wq);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
-        pinned_mask_d12 |= REC_TABLE[sq  as usize][squareOfKing  as usize] | (1<<sq);
+        //pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
+        pinned_mask_d12 |= REC_TABLE[sq  as usize][square_of_king  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
     (pinned_mask_hv, pinned_mask_d12)
 }
 
 pub fn _get_pinned_w(game : &Game) -> u64 {
-    let occupiedBB = game.occupied();
-    let ownPieces = game.white();
-    let squareOfKing = game.wk.tzcnt();
+    let occupied_bb = game.occupied();
+    let own_pieces = game.white();
+    let square_of_king = game.wk.tzcnt();
     let mut pinned = 0;
-    let mut pinner = xrayRookAttacks(occupiedBB, ownPieces, squareOfKing) & (game.br | game.bq);
+    let mut pinner = xray_rook_attacks(occupied_bb, own_pieces, square_of_king) & (game.br | game.bq);
     //_draw_bitboard(pinner);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
         pinner = pinner.blsr();
     }
-    pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & (game.bb | game.bq);
+    pinner = xray_bishop_attacks(occupied_bb, own_pieces, square_of_king) & (game.bb | game.bq);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
         pinner = pinner.blsr();
     }
     pinned
 }
 pub fn get_pinned_mask_w(game : &Game) -> (u64,u64) {
-    let occupiedBB = game.occupied();
-    let ownPieces = game.white();
-    let squareOfKing = game.wk.tzcnt();
+    let occupied_bb = game.occupied();
+    let own_pieces = game.white();
+    let square_of_king = game.wk.tzcnt();
     let mut pinned_mask_hv = 0;
     let mut pinned_mask_d12 = 0;
     //let mut pinned = 0;
-    let mut pinner = xrayRookAttacks(occupiedBB, ownPieces, squareOfKing) & (game.br | game.bq);
+    let mut pinner = xray_rook_attacks(occupied_bb, own_pieces, square_of_king) & (game.br | game.bq);
     //_draw_bitboard(pinner);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
-        pinned_mask_hv |= REC_TABLE[sq  as usize][squareOfKing  as usize] & (1<<sq);
+        //pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
+        pinned_mask_hv |= REC_TABLE[sq  as usize][square_of_king  as usize] & (1<<sq);
         pinner = pinner.blsr();
     }
-    pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & (game.bb | game.bq);
+    pinner = xray_bishop_attacks(occupied_bb, own_pieces, square_of_king) & (game.bb | game.bq);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
-        pinned_mask_d12 |= REC_TABLE[sq  as usize][squareOfKing  as usize] | (1<<sq);
+        //pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
+        pinned_mask_d12 |= REC_TABLE[sq  as usize][square_of_king  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
     (pinned_mask_hv, pinned_mask_d12)
@@ -468,7 +464,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
     }
     let mut copy_wq = game.wq;
     while copy_wq != 0 {
-        let attack = (hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied) );
+        let attack = hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
         if attack & k != 0 {
             if checked_mask != full {
                 return 0;
@@ -532,7 +528,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
     }
     let mut copy_wq = game.bq;
     while copy_wq != 0 {
-        let attack = (hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied) );
+        let attack = hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
         if attack & k != 0 {
             if checked_mask != full {
                 return 0;
@@ -556,9 +552,9 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         //PAWN
         let unpinned_wp = game.wp & !pin_hv;
-        let mut p_at = (unpinned_wp & !FILE_MASKS[7]) & (black >> 7) & (checkmask>> 7);
-        let mut p_at2 = (unpinned_wp & !FILE_MASKS[0]) & (black >> 9 ) & (checkmask >> 9);
-        
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask>> 7);
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & (black >> 9 ) & (checkmask >> 9);
+        //_draw_bitboard(!FILE_MASKS[7]);
         let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
         let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
@@ -800,15 +796,15 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
     legal_moves
 }
 
-fn xrayRookAttacks(occ : u64, mut blockers : u64, rookSq : u64) -> u64 {
-   let attacks : u64 = hv_moves(rookSq, occ);
+fn xray_rook_attacks(occ : u64, mut blockers : u64, rook_sq : u64) -> u64 {
+   let attacks : u64 = hv_moves(rook_sq, occ);
    blockers &= attacks;
-   return attacks ^ hv_moves(rookSq, occ ^ blockers);
+   return attacks ^ hv_moves(rook_sq, occ ^ blockers);
 }
-fn xrayBishopAttacks(occ : u64, mut blockers : u64, bishopSq : u64) -> u64 {
-   let attacks : u64 = diag_antid_moves(bishopSq, occ);
+fn xray_bishop_attacks(occ : u64, mut blockers : u64, bishop_sq : u64) -> u64 {
+   let attacks : u64 = diag_antid_moves(bishop_sq, occ);
    blockers &= attacks;
-   return attacks ^ diag_antid_moves(bishopSq, occ ^ blockers);
+   return attacks ^ diag_antid_moves(bishop_sq, occ ^ blockers);
 }
 pub fn possibility_wp(wpawn : u64, empty : u64, black : u64) -> u64 {
     let pmoves1 = (wpawn & !FILE_MASKS[0])<<7 & black;// & !RANK_MASK[7] ;
