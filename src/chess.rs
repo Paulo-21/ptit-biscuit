@@ -555,11 +555,12 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         let checkmask = get_checked_mask_w(game);
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         //PAWN
-        let mut p_at = (game.wp & !pin_hv & !FILE_MASKS[7]) & (black >> 7) & (checkmask>> 7);
-        let mut p_at2 = (game.wp & !pin_hv & !FILE_MASKS[0]) & (black >> 9 ) & (checkmask >> 9);
+        let unpinned_wp = game.wp & !pin_hv;
+        let mut p_at = (unpinned_wp & !FILE_MASKS[7]) & (black >> 7) & (checkmask>> 7);
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[0]) & (black >> 9 ) & (checkmask >> 9);
         
-        let mut p_at3 = (game.wp &  !pin_hv & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
-        let mut p_at4 = (game.wp & !pin_hv & !pin_d12) & (empty >> 8) & (checkmask >> 8);
+        let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
+        let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
@@ -678,10 +679,11 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         let (pin_hv, pin_d12) = get_pinned_mask_b(game);
         //_draw_bitboard(black);
         //PAWN
-        let mut p_at  = ((game.bp & !pin_hv  & !FILE_MASKS[7])) & (white << 7) & (checkmask << 7);
-        let mut p_at2 = ((game.bp & !pin_hv & !FILE_MASKS[0])) & (white << 9 ) & (checkmask << 9);
-        let mut p_at3 = (game.bp & !pin_hv & !pin_d12 ) & ( (empty << 16)&(empty << 8)) & RANK_MASK[6] & (checkmask <<16);
-        let mut p_at4 = (game.bp & !pin_hv & !pin_d12) & ( (empty << 8)) & (checkmask<<8);
+        let unpinned_bp = game.bp & !pin_hv;
+        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & (white << 7) & (checkmask << 7);
+        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & (white << 9 ) & (checkmask << 9);
+        let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16)&(empty << 8)) & RANK_MASK[6] & (checkmask <<16);
+        let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
