@@ -33,6 +33,8 @@ pub fn uci () {
             },
             "perft" => {
                 let game = Game::default();
+                //let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
+                //let game = get_bitboard_from_fen(fen);
                 let mut i = 1;
                 loop {
                     let now = Instant::now();
@@ -192,8 +194,8 @@ pub fn get_bitboard_from_fen(fen : Vec<&str>) -> Game {
     let board = fen[2];
     let toplay = fen[3];
     let castling_right = fen[4];
-    let en_passant = fen[5];
-    let nb_coup = fen[6];
+    //let en_passant = fen[5];
+    //let nb_coup = fen[6];
     let mut i : i32 = 63-7;
     for ligne in board.split('/') { //Transform fen to board
         //println!("ligne : {ligne}");

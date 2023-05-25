@@ -547,6 +547,7 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : u8, mut alpha : i32, mut
         hash_move = tt_entry.bestmove;
     }
     
+    //let mut legal_moves = get_legal_moves_fast(game);
     let mut legal_moves = get_legal_move(game.white_to_play, game);
     
     if depth == 0 || legal_moves.is_empty() {
@@ -562,14 +563,16 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : u8, mut alpha : i32, mut
     let mut value = i32::MIN>>1;
     if hash_move != 0 {
         legal_moves.push_front((hash_move, Piece::NONE));
+        //legal_moves.push_front(hash_move);
     }
     if first != 0 {
-        legal_moves.push_front((first,Piece::NONE));
-        //eprintln!("Hello {}", convert_custum_to_str(first));
+        legal_moves.push_front((first, Piece::NONE));
+        eprintln!("Hello {}", convert_custum_to_str(first));
     }
     let mut i = 0;
     for moveto_play in legal_moves{
         if (hash_move == moveto_play.0 || first == moveto_play.0) && i > 2 {
+        //if (hash_move == moveto_play || first == moveto_play) && i > 2 {
             continue;
         }
         
