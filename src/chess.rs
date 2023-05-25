@@ -691,6 +691,13 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             legal_moves.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
         }
+        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
+            legal_moves.push((4<<9)+(2<<1));
+        }
+        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
+            legal_moves.push((4<<9)+(6<<1));
+        }
+        
     }
     else { //BLACK
         let checkmask = get_checked_mask_b(game);
@@ -806,6 +813,12 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p != 0 {
             legal_moves.push((game.bk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
+        }
+        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
+            legal_moves.push((60<<9) + (58<<1));
+        }
+        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
+            legal_moves.push((60<<9) + (62<<1));
         }
     }
     legal_moves
