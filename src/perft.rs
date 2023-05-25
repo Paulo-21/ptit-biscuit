@@ -1,6 +1,5 @@
 use crate::chess::*;
 use crate::table_transposition::*;
-use crate::uci::*;
 pub fn perft(game: Game, depth : i8) -> usize {
     let mut nb_nodes = 0;
     
