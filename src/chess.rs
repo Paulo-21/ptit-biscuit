@@ -327,32 +327,6 @@ pub fn convert_string_to_bitboard(binary:usize) -> u64 {
     //u64::pow(2, (binary) as u32)
     1<<binary
 }
-//#![feature(unchecked_math)]
-pub fn _in_between( sq1 : u64, sq2 : u64) -> u64 {
-    /* Thanks Dustin, g2b7 did not work for c1-a3 */
-   //unsafe {
-   /*
-   let btwn  = (m1 << sq1) ^ (m1 << sq2);
-   let file  =   (sq2 & 7).wrapping_sub(sq1   & 7);
-   let rank  =  ((sq2 | 7).wrapping_sub(sq1)) >> 3 ;
-   let mut line  = (   (file  &  7).wrapping_sub(1)) & a2a7; /* a2a7 if same file */
-   line +=  ((   (rank  &  7).wrapping_sub(1)) >> 58).wrapping_mul(2) <<1; /* b1g1 if same rank */
-   line += (((rank.wrapping_sub(file)) & 15).wrapping_sub(1)) & b2g7; /* b2g7 if same diagonal */
-   line += (((rank.wrapping_add(file)) & 15).wrapping_sub(1)) & h1b7; /* h1b7 if same antidiag */
-   line = line.wrapping_mul(btwn & (btwn ^ 1<<63)); /* mul acts like shift by smaller square */
-   //}
-   */
-   let btwn  = (m1 << sq1) ^ (m1 << sq2);
-   let file  =   (sq2 & 7) - (sq1   & 7);
-   let rank  =  ((sq2 | 7) -  sq1) >> 3 ;
-   let mut line  =      (   (file  &  7) - 1) & a2a7; /* a2a7 if same file */
-   line += 2 * ((   (rank  &  7) - 1) >> 58); /* b1g1 if same rank */
-   line += (((rank - file) & 15) - 1) & b2g7; /* b2g7 if same diagonal */
-   line += (((rank + file) & 15) - 1) & h1b7; /* h1b7 if same antidiag */
-   line *= btwn & (btwn ^ 1<<63); /* mul acts like shift by smaller square */
-   
-   return line & btwn;   /* return the bits on that line in-between */
-}
 pub fn _get_pinned_b(game : &Game) -> u64 {
     let occupiedBB = game.occupied();
     let ownPieces = game.black();
@@ -377,21 +351,21 @@ pub fn get_pinned_mask_b(game : &Game) -> (u64,u64) {
     let occupiedBB = game.occupied();
     let ownPieces = game.black();
     let squareOfKing = game.bk.tzcnt();
-    let mut pinned = 0;
+    //let mut pinned = 0;
     let mut pinned_mask_hv = 0;
     let mut pinned_mask_d12 = 0;
     let mut pinner = xrayRookAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wr | game.wq);
     //_draw_bitboard(pinner);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
         pinned_mask_hv |= REC_TABLE[sq  as usize][squareOfKing  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
     pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & (game.wb | game.wq);
     while pinner != 0 {
         let sq  = pinner.tzcnt();
-        pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
+        //pinned |= REC_TABLE[sq  as usize][squareOfKing  as usize] & ownPieces;
         pinned_mask_d12 |= REC_TABLE[sq  as usize][squareOfKing  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
