@@ -42,12 +42,8 @@ pub fn uci () {
                     let time = now.elapsed().as_millis();
                     let nps = nb_node.checked_div(time);
                     let nps_str = match nps {
-                        Some(x) =>{
-                            (x*1000).to_string()
-                        },
-                        None => {
-                            "INF".to_string()
-                        }
+                        Some(x) => (x*1000).to_string(),
+                        None => "INF".to_string()
                     };
                     println!("Perft <{i}> : {} {} milliseconde, {} Nps", nb_node, time , nps_str);
                     i+=1;
