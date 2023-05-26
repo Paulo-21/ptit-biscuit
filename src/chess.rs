@@ -966,8 +966,8 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
             p2 = p2.blsr();
         }
         //KING
-        let possib = possibility_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !possib & !white & checkmask;// & !pin_hv & !pin_d12;
+        let attack_b = attack_b(game);
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white & checkmask;// & !pin_hv & !pin_d12;
         while p != 0 {
             let b = p.tzcnt();
             if 1<<b & black != 0 {
@@ -978,10 +978,10 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
             }
             p = p.blsr();
         }
-        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
+        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && attack_b & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(2<<1));
         }
-        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
+        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && attack_b & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(6<<1));
         }
         
@@ -1144,8 +1144,8 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
             p2 = p2.blsr();
         }
         //KING
-        let possiw = possibility_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !possiw & !black & checkmask;
+        let attack_w = attack_w(game);
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black & checkmask;
         while p != 0 {
             let b = p.tzcnt();
             if 1<<b & white != 0 {
@@ -1156,10 +1156,10 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
             }
             p = p.blsr();
         }
-        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
+        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && attack_w & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
             legal_moves.push((60<<9) + (58<<1));
         }
-        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
+        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && attack_w & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
             legal_moves.push((60<<9) + (62<<1));
         }
     }
