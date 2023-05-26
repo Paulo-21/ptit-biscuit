@@ -100,6 +100,7 @@ pub static RANK_MASK : [u64;8] = [
     0x00FF000000000000,
     0xFF00000000000000
 ];
+pub static FULL : u64 = 0xFFFFFFFFFFFFFFFF;
 static FILE_MASKS : [u64;8] = [
     0x101010101010101, 0x202020202020202, 0x404040404040404, 0x808080808080808,
     0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080
@@ -659,16 +660,16 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p2 = p2.blsr();
         }
         //KING
-        let possib = possibility_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !possib & !white & checkmask;// & !pin_hv & !pin_d12;
+        let attack_b = attack_b(game);
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white & checkmask;// & !pin_hv & !pin_d12;
         while p != 0 {
             legal_moves.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
         }
-        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
+        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && attack_b & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(2<<1));
         }
-        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
+        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && attack_b & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(6<<1));
         }
         
@@ -783,16 +784,16 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p2 = p2.blsr();
         }
         //KING
-        let possiw = possibility_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !possiw & !black & checkmask;
+        let attack_w = attack_w(game);
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black & checkmask;
         while p != 0 {
             legal_moves.push((game.bk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
         }
-        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
+        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && attack_w & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
             legal_moves.push((60<<9) + (58<<1));
         }
-        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
+        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && attack_w & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
             legal_moves.push((60<<9) + (62<<1));
         }
     }
@@ -2058,10 +2059,41 @@ pub fn compute_move_b_thrust(chessmove : (u64,u64,Piece), game :&mut Game) -> i8
         0
     //} else { -1 }
 }
-/*
-pub fn is_white_attack_at(game : &Game) -> bool {
 
-}*/
+pub fn attack_w( game : &Game) -> u64 {
+    let black = game.black();
+    let white = game.white();
+    let occupied = black | white;
+    let mut attack = 0;
+    attack |= attack_wp(game.wp, FULL);
+    let mut copy_wn = game.wn;
+    while copy_wn != 0 {
+        attack |= KNIGHT_MOVE[copy_wn.tzcnt() as usize];
+        copy_wn &= copy_wn-1;
+    }
+    /*f game.wn != 0 {
+        attack |= possibility_n(game.wn) & !white;
+    }*/
+    let mut copy_wb = game.wb;
+    while copy_wb != 0 {
+        attack |= diag_antid_moves(copy_wb.tzcnt() , occupied);
+        copy_wb &= copy_wb-1;
+    }
+    let mut copy_wr = game.wr;
+    while copy_wr != 0 {
+        attack |= hv_moves(copy_wr.tzcnt() , occupied);
+        copy_wr &= copy_wr-1;
+    }
+    let mut copy_wq = game.wq;
+    while copy_wq != 0 {
+        attack |= hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
+        copy_wq &= copy_wq-1;
+    }
+    //attack |= possibility_k(game.wk) & !white;
+    attack |= KING_MOVE[game.wk.tzcnt() as usize];
+    
+    attack
+}
 pub fn possibility_w( game : &Game) -> u64 {
     let black = game.black();
     let white = game.white();
@@ -2094,6 +2126,37 @@ pub fn possibility_w( game : &Game) -> u64 {
     //attack |= possibility_k(game.wk) & !white;
     attack |= KING_MOVE[game.wk.tzcnt() as usize];
     
+    attack
+}
+pub fn attack_b( game : &Game) -> u64 {
+    let black = game.bp | game.bn | game.bb | game.br | game.bq | game.bk;
+    let white = game.wp | game.wn | game.wb | game.wr | game.wq | game.wk;
+    let occupied = black | white;
+    let mut attack = 0;
+
+    attack |= attack_bp(game.bp, FULL);
+
+    if game.bn != 0 {
+        attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize];
+        //attack |= possibility_n(game.bn) & !black;
+    }
+    let mut copy_bb = game.bb;
+    while copy_bb != 0 {
+        attack |= diag_antid_moves(copy_bb.tzcnt() , occupied);
+        copy_bb &= copy_bb-1;
+    }
+    let mut copy_br = game.br;
+    while copy_br != 0 {
+        attack |= hv_moves(copy_br.tzcnt(), occupied);
+        copy_br &= copy_br-1;
+    }
+    let mut copy_bq = game.bq;
+    while copy_bq != 0 {
+        attack |= hv_moves(copy_bq.tzcnt(), occupied) | diag_antid_moves(copy_bq.tzcnt(), occupied) ;
+        copy_bq &= copy_bq-1;
+    }
+    attack |= KING_MOVE[game.bk.tzcnt() as usize];
+    //attack |= possibility_k(game.bk) & !black;
     attack
 }
 pub fn possibility_b( game : &Game) -> u64 {
