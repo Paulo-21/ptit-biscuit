@@ -1225,6 +1225,7 @@ pub fn possibility_k(wk : u64) -> u64 {
     attack |= wk<<8 | wk>>8;
     attack
 }
+#[inline(always)]
 pub fn hyperbola_quintessence(occupied : u64, mask: u64, mut number : u64) -> u64 {
     number = 1<<number;
     let mut forward = occupied & mask ;
@@ -1237,6 +1238,7 @@ pub fn hyperbola_quintessence(occupied : u64, mask: u64, mut number : u64) -> u6
     //( - 2 * number) ^ ((occupied & mask).swap_bytes() - 2 * number.swap_bytes()).swap_bytes()
     //(occupied - 2 * number) ^ (occupied.reverse_bits() - 2 * number.reverse_bits()).reverse_bits()
 }
+#[inline(always)]
 pub fn rank_attacks(occupied: u64, sq: u64) -> u64 {
     let f = sq & 7; // sq.file() as Bitboard;
     let r = sq & !7; // (sq.rank() * 8) as Bitboard;
@@ -1269,9 +1271,11 @@ pub fn convert_move_to_bitboard(moves : &str) -> (u64, u64, Piece) {
     }
     (a,b, promotion_piece)
 }
+#[inline(always)]
 pub fn diag_antid_moves(square : u64, occupied : u64) -> u64 {
     hyperbola_quintessence(occupied, DIAG_MASKS[((square/8) + (square%8)) as usize], square) | hyperbola_quintessence(occupied, ANTIDIAG_MASKS[((square/8)+7 - (square%8)) as usize], square)
 }
+#[inline(always)]
 pub fn hv_moves(square : u64, occupied : u64) -> u64 {
     let b = hyperbola_quintessence(occupied, FILE_MASKS[(square % 8) as usize], square);
     rank_attacks(occupied, square) | b
