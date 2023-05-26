@@ -1145,7 +1145,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
         }
         //KING
         let attack_w = attack_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black & checkmask;
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black;
         while p != 0 {
             let b = p.tzcnt();
             if 1<<b & white != 0 {
