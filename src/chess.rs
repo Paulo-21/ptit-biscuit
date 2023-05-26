@@ -400,7 +400,7 @@ pub fn get_pinned_mask_w(game : &Game) -> (u64,u64) {
     while pinner != 0 {
         let sq  = pinner.tzcnt();
         //pinned |= REC_TABLE[sq  as usize][square_of_king  as usize] & own_pieces;
-        pinned_mask_hv |= REC_TABLE[sq  as usize][square_of_king  as usize] & (1<<sq);
+        pinned_mask_hv |= REC_TABLE[sq  as usize][square_of_king  as usize] | (1<<sq);
         pinner = pinner.blsr();
     }
     pinner = xray_bishop_attacks(occupied_bb, own_pieces, square_of_king) & (game.bb | game.bq);
@@ -552,32 +552,36 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         //PAWN
         let unpinned_wp = game.wp & !pin_hv;
-        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask>> 7);
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask >> 7);
         let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & (black >> 9 ) & (checkmask >> 9);
-        //_draw_bitboard(!FILE_MASKS[7]);
         let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
         let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
-            legal_moves.push((pi_square <<9) | (((1<<pi_square)<<7).tzcnt()<<1) );
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | (((pi_square+7)<<1)) | (((piece)&RANK_MASK[6]) != 0) as u64);
             p_at = p_at.blsr();
         }
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)<<9).tzcnt()<<1) );
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | ((pi_square+9)<<1)  | (((piece)&RANK_MASK[6]) != 0) as u64);
             p_at2 = p_at2.blsr();
         }
         while p_at3 != 0 {
             let pi_square = p_at3.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)<<16).tzcnt()<<1) );
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64);
             p_at3 = p_at3.blsr();
         }
         while p_at4 != 0 {
             let pi_square = p_at4.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)<<8).tzcnt()<<1) );
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64);
             p_at4 = p_at4.blsr();
         }
+        
         //KNIGHT
         let mut copy = game.wn & !(pin_hv | pin_d12);
         while copy != 0 {
@@ -588,7 +592,6 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             }
             copy = copy.blsr();
         }
-
         //BISHOP
         let mut p = game.wb & !(pin_hv | pin_d12);
         let mut p1 = game.wb & pin_d12;
@@ -603,7 +606,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = diag_antid_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_d12;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -622,7 +625,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = hv_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_hv;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -642,7 +645,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = hv_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_hv;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -650,7 +653,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p2 != 0 {
             let mut att = diag_antid_moves(p2.tzcnt(), occupied) & !white & checkmask & pin_d12;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p2.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p2 = p2.blsr();
@@ -668,6 +671,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
             legal_moves.push((4<<9)+(6<<1));
         }
+        
     }
     else { //BLACK
         let checkmask = get_checked_mask_b(game);
@@ -682,22 +686,22 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)>>7).tzcnt()<<1) );
+            legal_moves.push((pi_square <<9) + ((pi_square-7)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
             p_at = p_at.blsr();
         }
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)>>9).tzcnt()<<1) );
+            legal_moves.push((pi_square <<9) + ((pi_square-9)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
             p_at2 = p_at2.blsr();
         }
         while p_at3 != 0 {
             let pi_square = p_at3.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)>>16).tzcnt()<<1) );
+            legal_moves.push((pi_square <<9) + ((pi_square-16)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
             p_at3 = p_at3.blsr();
         }
         while p_at4 != 0 {
             let pi_square = p_at4.tzcnt();
-            legal_moves.push((pi_square <<9) + (((1<<pi_square)>>8).tzcnt()<<1) );
+            legal_moves.push((pi_square <<9) + ((pi_square-8)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
             p_at4 = p_at4.blsr();
         }
 
@@ -726,7 +730,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = diag_antid_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_d12;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -745,7 +749,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = hv_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_hv;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -765,7 +769,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p1 != 0 {
             let mut att = hv_moves(p1.tzcnt(), occupied) & checkmask & pin_hv & !black;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p1.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p1 = p1.blsr();
@@ -773,7 +777,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         while p2 != 0 {
             let mut att = diag_antid_moves(p2.tzcnt(), occupied) & checkmask & pin_d12 & !black;
             while att != 0 {
-                legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves.push((p2.tzcnt() <<9) + (att.tzcnt()<<1) );
                 att = att.blsr();
             }
             p2 = p2.blsr();
@@ -793,6 +797,372 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
     }
     legal_moves
+}
+pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>) {
+    let mut capture = Vec::with_capacity(20);
+    let mut legal_moves = Vec::with_capacity(30);
+    let white = game.white();
+    let black = game.black();
+    let occupied = white | black;
+    let empty = !occupied;
+    if game.white_to_play { //WHITE
+        let checkmask = get_checked_mask_w(game);
+        let (pin_hv, pin_d12) = get_pinned_mask_w(game);
+        //PAWN
+        let unpinned_wp = game.wp & !pin_hv;
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask >> 7);
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & (black >> 9 ) & (checkmask >> 9);
+        let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
+        let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
+        
+        while p_at != 0 {
+            let pi_square = p_at.tzcnt();
+            let piece = 1<<pi_square;
+            capture.push((pi_square <<9) | (((pi_square+7)<<1)) | (((piece)&RANK_MASK[6]) != 0) as u64);
+            p_at = p_at.blsr();
+        }
+        while p_at2 != 0 {
+            let pi_square = p_at2.tzcnt();
+            let piece = 1<<pi_square;
+            capture.push((pi_square <<9) | ((pi_square+9)<<1)  | (((piece)&RANK_MASK[6]) != 0) as u64);
+            p_at2 = p_at2.blsr();
+        }
+        while p_at3 != 0 {
+            let pi_square = p_at3.tzcnt();
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64);
+            p_at3 = p_at3.blsr();
+        }
+        while p_at4 != 0 {
+            let pi_square = p_at4.tzcnt();
+            let piece = 1<<pi_square;
+            legal_moves.push((pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64);
+            p_at4 = p_at4.blsr();
+        }
+        
+        //KNIGHT
+        let mut copy = game.wn & !(pin_hv | pin_d12);
+        while copy != 0 {
+            let mut att = KNIGHT_MOVE[copy.tzcnt() as usize] & !white & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((copy.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((copy.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            copy = copy.blsr();
+        }
+        //BISHOP
+        let mut p = game.wb & !(pin_hv | pin_d12);
+        let mut p1 = game.wb & pin_d12;
+        while p != 0 {
+            let mut att = diag_antid_moves(p.tzcnt(), occupied) & !white & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = diag_antid_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_d12;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //ROOK
+        let mut p = game.wr & !(pin_hv | pin_d12);
+        let mut p1 = game.wr & pin_hv;
+        while p != 0 {
+            let mut att = hv_moves(p.tzcnt(), occupied) & !white & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = hv_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_hv;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //QUEEN
+        let mut p = game.wq & !(pin_hv | pin_d12);
+        let mut p1 = game.wq & pin_hv;
+        let mut p2 = game.wq & pin_d12;
+        while p != 0 {
+            let mut att = (hv_moves(p.tzcnt(), occupied) | diag_antid_moves(p.tzcnt(), occupied)) & !white & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = hv_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_hv;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        while p2 != 0 {
+            let mut att = diag_antid_moves(p2.tzcnt(), occupied) & !white & checkmask & pin_d12;
+            while att != 0 {
+                let b  = att.tzcnt();
+                if 1<<b & black != 0 {
+                    capture.push((p2.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p2.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p2 = p2.blsr();
+        }
+        //KING
+        let possib = possibility_b(game);
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !possib & !white & checkmask;// & !pin_hv & !pin_d12;
+        while p != 0 {
+            let b = p.tzcnt();
+            if 1<<b & black != 0 {
+                capture.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
+            }
+            else {
+                legal_moves.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
+            }
+            p = p.blsr();
+        }
+        if game.wqueen_castle && occupied & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(1)) == 0 && possib & (2u64.pow(3) + 2u64.pow(2) + 2u64.pow(4)) == 0 {
+            legal_moves.push((4<<9)+(2<<1));
+        }
+        if game.wking_castle && occupied & (2u64.pow(6) + 2u64.pow(5)) == 0 && possib & (2u64.pow(6) + 2u64.pow(5) + 2u64.pow(4)) == 0 {
+            legal_moves.push((4<<9)+(6<<1));
+        }
+        
+    }
+    else { //BLACK
+        let checkmask = get_checked_mask_b(game);
+        let (pin_hv, pin_d12) = get_pinned_mask_b(game);
+        //_draw_bitboard(black);
+        //PAWN
+        let unpinned_bp = game.bp & !pin_hv;
+        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & (white << 7) & (checkmask << 7);
+        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & (white << 9 ) & (checkmask << 9);
+        let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16)&(empty << 8)) & RANK_MASK[6] & (checkmask <<16);
+        let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
+        
+        while p_at != 0 {
+            let pi_square = p_at.tzcnt();
+            capture.push((pi_square <<9) + ((pi_square-7)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
+            p_at = p_at.blsr();
+        }
+        while p_at2 != 0 {
+            let pi_square = p_at2.tzcnt();
+            capture.push((pi_square <<9) + ((pi_square-9)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
+            p_at2 = p_at2.blsr();
+        }
+        while p_at3 != 0 {
+            let pi_square = p_at3.tzcnt();
+            legal_moves.push((pi_square <<9) + ((pi_square-16)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
+            p_at3 = p_at3.blsr();
+        }
+        while p_at4 != 0 {
+            let pi_square = p_at4.tzcnt();
+            legal_moves.push((pi_square <<9) + ((pi_square-8)<<1) | (((1<<pi_square)&RANK_MASK[1]) != 0) as u64);
+            p_at4 = p_at4.blsr();
+        }
+
+        //KNIGHT
+        let mut copy = game.bn & !(pin_hv | pin_d12);
+        while copy != 0 {
+            let mut att = KNIGHT_MOVE[copy.tzcnt() as usize] & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white !=0  {
+                    capture.push((copy.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((copy.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            copy = copy.blsr();
+        }
+
+        //BISHOP
+        let mut p = game.bb & !(pin_hv | pin_d12);
+        let mut p1 = game.bb & pin_d12;
+        while p != 0 {
+            let mut att = diag_antid_moves(p.tzcnt(), occupied) & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = diag_antid_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_d12;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0{
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) )
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //ROOK
+        let mut p = game.br & !(pin_hv | pin_d12);
+        let mut p1 = game.br & pin_hv;
+        while p != 0 {
+            let mut att = hv_moves(p.tzcnt(), occupied) & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = hv_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_hv;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //QUEEN
+        let mut p = game.bq & !(pin_hv | pin_d12);
+        let mut p1 = game.bq & pin_hv;
+        let mut p2 = game.bq & pin_d12;
+        while p != 0 {
+            let mut att = (hv_moves(p.tzcnt(), occupied) | diag_antid_moves(p.tzcnt(), occupied)) & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let mut att = hv_moves(p1.tzcnt(), occupied) & checkmask & pin_hv & !black;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p1.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        while p2 != 0 {
+            let mut att = diag_antid_moves(p2.tzcnt(), occupied) & checkmask & pin_d12 & !black;
+            while att != 0 {
+                let b = att.tzcnt();
+                if 1<<b & white != 0 {
+                    capture.push((p2.tzcnt() <<9) + (b<<1) );
+                }
+                else {
+                    legal_moves.push((p2.tzcnt() <<9) + (b<<1) );
+                }
+                att = att.blsr();
+            }
+            p2 = p2.blsr();
+        }
+        //KING
+        let possiw = possibility_w(game);
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !possiw & !black & checkmask;
+        while p != 0 {
+            let b = p.tzcnt();
+            if 1<<b & white != 0 {
+                capture.push((game.bk.tzcnt() <<9) + (b<<1) );
+            }
+            else {
+                legal_moves.push((game.bk.tzcnt() <<9) + (b<<1) );
+            }
+            p = p.blsr();
+        }
+        if game.bqueen_castle && occupied & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(57)) == 0 && possiw & (2u64.pow(58) + 2u64.pow(59) + 2u64.pow(60)) == 0 {
+            legal_moves.push((60<<9) + (58<<1));
+        }
+        if game.bking_castle && occupied & (2u64.pow(61) + 2u64.pow(62)) == 0 && possiw & (2u64.pow(61) + 2u64.pow(62) + 2u64.pow(60)) == 0 {
+            legal_moves.push((60<<9) + (62<<1));
+        }
+    }
+    (capture, legal_moves)
 }
 
 fn xray_rook_attacks(occ : u64, mut blockers : u64, rook_sq : u64) -> u64 {

@@ -567,7 +567,7 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : u8, mut alpha : i32, mut
     }
     if first != 0 {
         legal_moves.push_front((first, Piece::NONE));
-        eprintln!("Hello {}", convert_custum_to_str(first));
+        //eprintln!("Hello {}", convert_custum_to_str(first));
     }
     let mut i = 0;
     for moveto_play in legal_moves{
@@ -616,6 +616,163 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : u8, mut alpha : i32, mut
     //eprintln!("{}", convert_custum_to_str(best_move));
     (Some(value), best_move)
 }
+pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
+    if tool.timeover.load(Ordering::Relaxed) {
+        return (None,0);
+    }
+    *nb_node+=1;
+    let alpha_orgi = alpha;
+    let mut hash_move = 0u64;
+    let mut best_move = 0u64;
+    let tt_entry = tool.tt.get(game.hash);
+    if tt_entry.hash == game.hash {
+        if tt_entry.depth >= depth {
+            match tt_entry.node_type {
+                NodeType::PV =>  return (Some(tt_entry.eval), tt_entry.bestmove),
+                NodeType::ALL => alpha = max(alpha, tt_entry.eval),
+                NodeType::CUT => { 
+                    beta = min(beta, tt_entry.eval);
+                }
+            }
+            if alpha >= beta {
+                return (Some(tt_entry.eval), tt_entry.bestmove);
+            }
+        }        
+        hash_move = tt_entry.bestmove;
+    }
+    
+    //let mut legal_moves = get_legal_moves_fast(game);
+    let (capture, legal_moves) = get_legal_moves_fast_c(game);
+    
+    if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
+        let mut eval = eval(game, (capture.len() + legal_moves.len()) as i32);
+        //eval *= -1 * !game.white_to_play as i32;
+        if !game.white_to_play {
+            eval *= -1;
+        };
+        return (Some(eval),0);
+    };
+    
+    let mut value = i32::MIN>>1;
+    if hash_move != 0 {
+        let (a,b, prom) = convert_custum_move2(hash_move);
+        let mut game1 = *game;
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (s, _b_move) = alpha_beta_neg_tt_best_time_fast(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        match s {
+            Some(score) => {
+                if value < -score {
+                    value = -score;
+                    best_move = hash_move;
+                }
+                alpha = max(alpha, value);
+                if alpha >= beta {
+                    let node_t;
+                    if value <= alpha_orgi { node_t = NodeType::CUT; }
+                    else if value >= beta { node_t = NodeType::ALL; }
+                    else { node_t = NodeType::PV; }
+                    tool.tt.set(game.hash, depth, value, best_move, node_t);
+                    return (Some(value), best_move);
+                }
+            },
+            None =>{ return (None, 0) }
+        }
+    }
+    /*if first != 0 {
+        let (a,b, prom) = convert_custum_move2(first);
+        let mut game1 = *game;
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (s, _b_move) = alpha_beta_neg_tt_best_time_fast(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        match s {
+            Some(score) => {
+                if value < -score {
+                    value = -score;
+                    best_move = first;
+                }
+                alpha = max(alpha, value);
+                if alpha >= beta {
+                    let node_t;
+                    if value <= alpha_orgi { node_t = NodeType::CUT; }
+                    else if value >= beta { node_t = NodeType::ALL; }
+                    else { node_t = NodeType::PV; }
+                    tool.tt.set(game.hash, depth, value, best_move, node_t);
+                    return (Some(value), best_move);
+                }
+            },
+            None =>{ return (None, 0) }
+        }
+    }*/
+    let mut i = 0;
+    for moveto_play in capture {
+        if hash_move == moveto_play || first == moveto_play && i>1{
+            continue;
+        }
+        let (a,b, prom) = convert_custum_move2(moveto_play);
+        let mut game1 = *game;
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (s, _b_move) = alpha_beta_neg_tt_best_time_fast(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        match s {
+            Some(score) => {
+                if value < -score {
+                    value = -score;
+                    best_move = moveto_play;
+                }
+                alpha = max(alpha, value);
+                if alpha >= beta {
+                    let node_t;
+                    if value <= alpha_orgi { node_t = NodeType::CUT; }
+                    else if value >= beta { node_t = NodeType::ALL; }
+                    else { node_t = NodeType::PV; }
+                    tool.tt.set(game.hash, depth, value, best_move, node_t);
+                    return (Some(value), best_move);
+                }
+                i+=1;
+            },
+            None =>{ return (None, 0) }
+        }
+    }
+    for moveto_play in legal_moves{
+        let (a,b, prom) = convert_custum_move2(moveto_play);
+        let mut game1 = *game;
+        if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }
+        else { compute_move_b_hash((a, b, prom), &mut game1); }
+        game1.white_to_play^=true;
+        let (s, _b_move) = alpha_beta_neg_tt_best_time_fast(&mut game1, depth-1, -beta, -alpha, tool, nb_node, 0);
+        match s {
+            Some(score) => {
+                if value < -score {
+                    value = -score;
+                    best_move = moveto_play;
+                }
+                alpha = max(alpha, value);
+                if alpha >= beta {
+                    break;
+                }
+                //i+=1;
+            },
+            None =>{ return (None, 0) }
+        }
+    }
+    let node_t;
+    if value <= alpha_orgi {
+        node_t = NodeType::CUT;
+    }
+    else if value >= beta {
+        node_t = NodeType::ALL;
+    }
+    else {
+        node_t = NodeType::PV;
+    }
+    tool.tt.set(game.hash, depth, value, best_move, node_t);
+    //eprintln!("{}", convert_custum_to_str(best_move));
+    (Some(value), best_move)
+}
 pub fn mtd_f(game : &Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
     //eprintln!("MTD-F inside {} {}", depth, f);
     let (mut g, mut bmove) = (f,first);
@@ -626,7 +783,8 @@ pub fn mtd_f(game : &Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node
     loop  {
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
-        let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
+        //let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
+        let (x,i)  = alpha_beta_neg_tt_best_time_fast(game, depth, beta-1, beta, tool , nb_node, bmove);
         match x {
             Some(s) => {
                 g = s;
@@ -644,6 +802,7 @@ pub fn mtd_f(game : &Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node
     }
     (Some(g), bmove)
 }
+
 /*
 fn nextGuess(α, β, subtreeCount) {
     return α + (β − α) × (subtreeCount − 1) / subtreeCount
