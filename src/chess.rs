@@ -89,7 +89,21 @@ pub fn convert_square_to_move(a_move : u64) -> String {
     a.push((48 + b+1 ) as char );
     a
 }
+pub static mvv_lva : [[u64;12];12] = [
+ 	[105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605],
+	[104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604],
+	[103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603],
+	[102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602],
+	[101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601],
+	[100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600],
 
+	[105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605],
+	[104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604],
+	[103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603],
+	[102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602],
+	[101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601],
+	[100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600]
+];
 pub static RANK_MASK : [u64;8] = [
     0x00000000000000FF,
     0x000000000000FF00,
@@ -661,7 +675,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
         //KING
         let attack_b = attack_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white & checkmask;// & !pin_hv & !pin_d12;
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white;// & !pin_hv & !pin_d12;
         while p != 0 {
             legal_moves.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
@@ -785,7 +799,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
         //KING
         let attack_w = attack_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black & checkmask;
+        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black;
         while p != 0 {
             legal_moves.push((game.bk.tzcnt() <<9) + (p.tzcnt()<<1) );
             p = p.blsr();
