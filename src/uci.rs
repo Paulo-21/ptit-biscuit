@@ -142,20 +142,6 @@ fn input_go(command : Vec<&str>, game: &Game, tt : &mut TranspositionTable) {
     }
 }
 
-/*fn a () {
-    let tt = TranspositionTable::with_memory(8<<22);
-    let (a, b, prom) = compute(&game, &mut tt);
-    let bestmovea = convert_square_to_move(a);
-    let bestmoveb = convert_square_to_move(b);
-    match prom {
-        Piece::NONE => {
-            println!("bestmove {}{}", bestmovea, bestmoveb);
-        },
-        _ => {
-            println!("bestmove {}{}q", bestmovea, bestmoveb);
-        }
-    }
-}*/
 fn compute(game : &Game, depth : u8, move_time : i32, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("START Compute");
     let now = Instant::now();
@@ -167,7 +153,7 @@ fn compute(game : &Game, depth : u8, move_time : i32, tt : &mut TranspositionTab
     //let res = _compute_minimax(game);
     //let res = _compute_alpha_beta(game, depth );
     //let res = compute_pvs(game, depth , tt);
-    //let res = compute_pvs_iter(game, depth , tt);
+    //let res = _compute_pvs_iter(game, depth , tt);
     let res = compute_mdt_f_iter(game, depth, move_time,  tt);
 
     eprintln!("Compute in : {} milli seconde", now.elapsed().as_millis());

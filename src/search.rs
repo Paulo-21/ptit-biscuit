@@ -208,7 +208,7 @@ pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_
             return tt_entry.eval;
         }
     }
-    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    let (mut captures, legal_moves, score_move) = get_legal_moves_fast_c(game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
@@ -217,17 +217,18 @@ pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_
         };
         return eval;
     };
-    if hash_move != 0 {
+    /*if hash_move != 0 {
         legal_moves.push_front((hash_move, Piece::NONE));
     }
     if first_move != 0 {
         legal_moves.push_front((first_move, Piece::NONE));
-    }
+    }*/
+    sort_move(&mut captures, score_move);
     let mut first = true;
     let mut score = 0;
     let mut bestmove = 0;
     for moveto in legal_moves {
-        let (a, b, prom) = convert_custum_move(moveto);
+        let (a, b, prom) = convert_custum_move2(moveto);
         let mut game1 = *game;
         game1.white_to_play ^= true;
         if game.white_to_play {
@@ -238,18 +239,18 @@ pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_
         if first {
             first = false;
             score = -_pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
-            bestmove = moveto.0;
+            bestmove = moveto;
         }
         else {
             score = -_pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
             
             if alpha < score && score < beta {
-                bestmove = moveto.0;
+                bestmove = moveto;
                 score = -_pvs(&mut game1, depth- 1, -beta, -score, nb_node);
             }
         }
         if score > alpha {
-            bestmove = moveto.0;
+            bestmove = moveto;
             alpha = score;
         }
         //alpha = max(alpha, score);
@@ -285,7 +286,7 @@ pub fn _pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32
             return tt_entry.eval;
         }
     }
-    let mut legal_moves = get_legal_move(game.white_to_play, game);
+    let (mut captures, legal_moves, score_move) = get_legal_moves_fast_c(game);
     *nb_node+=1;
     if depth == 0 || legal_moves.is_empty() {
         let mut eval = eval(game, legal_moves.len() as i32);
@@ -294,17 +295,18 @@ pub fn _pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32
         };
         return eval;
     };
-    if hash_move != 0 {
+    /*if hash_move != 0 {
         legal_moves.push_front((hash_move, Piece::NONE));
     }
     if first_move != 0 {
         legal_moves.push_front((first_move, Piece::NONE));
-    }
+    }*/
+    sort_move(&mut captures, score_move);
     let mut first = true;
     let mut score = 0;
     let mut bestmove = 0;
     for moveto in legal_moves {
-        let (a, b, prom) = convert_custum_move(moveto);
+        let (a, b, prom) = convert_custum_move2(moveto);
         let mut game1 = *game;
         game1.white_to_play ^= true;
         if game.white_to_play {
@@ -315,18 +317,18 @@ pub fn _pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32
         if first {
             first = false;
             score = -_pvs_tt_best(&mut game1, depth- 1, -beta, -alpha, nb_node, tt, 0);
-            bestmove = moveto.0;
+            bestmove = moveto;
         }
         else {
             score = -_pvs_tt_best(&mut game1, depth- 1, -alpha-1, -alpha, nb_node, tt, 0);
             
             if alpha < score && score < beta {
-                bestmove = moveto.0;
+                bestmove = moveto;
                 score = -_pvs(&mut game1, depth- 1, -beta, -score, nb_node);
             }
         }
         if score > alpha {
-            bestmove = moveto.0;
+            bestmove = moveto;
             alpha = score;
         }
         //alpha = max(alpha, score);
@@ -642,7 +644,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32
     }
     
     //let mut legal_moves = get_legal_moves_fast(game);
-    let (capture, legal_moves) = get_legal_moves_fast_c(game);
+    let (mut capture, legal_moves, score_moves) = get_legal_moves_fast_c(game);
     
     if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
         let mut eval = eval(game, (capture.len() + legal_moves.len()) as i32);
@@ -707,6 +709,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32
         }
     }*/
     let mut i = 0;
+    //sort_move(&mut capture, score_moves);
     for moveto_play in capture {
         if hash_move == moveto_play || first == moveto_play && i>1{
             continue;
@@ -802,7 +805,6 @@ pub fn mtd_f(game : &Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node
     }
     (Some(g), bmove)
 }
-
 /*
 fn nextGuess(α, β, subtreeCount) {
     return α + (β − α) × (subtreeCount − 1) / subtreeCount
