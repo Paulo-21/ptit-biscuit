@@ -10,4 +10,7 @@ PeSTO's evaluation<br>
 MVV LVA ordering<br>
 perft6 0.780s (150Mnodes/sec)<br>
 <br>
+
+TODO : <br>
+Killer move heuristic <br>
 <img alt="Ptit Biscuit" src="https://cdn.jeux2cuisine.fr/IMG/jpg/ptitbiscuit.jpg">
