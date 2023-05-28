@@ -7,5 +7,7 @@ Alpha-beta prunning<br>
 MTD-f<br>
 bitboard based<br>
 PeSTO's evaluation<br>
+MVV LVA ordering<br>
+perft6 0.780s (150Mnodes/sec)<br>
 <br>
 <img alt="Ptit Biscuit" src="https://cdn.jeux2cuisine.fr/IMG/jpg/ptitbiscuit.jpg">
