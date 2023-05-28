@@ -709,7 +709,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32
         }
     }*/
     let mut i = 0;
-    //sort_move(&mut capture, score_moves);
+    sort_move(&mut capture, score_moves);
     for moveto_play in capture {
         if hash_move == moveto_play || first == moveto_play && i>1{
             continue;

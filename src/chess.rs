@@ -1066,7 +1066,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
         }
         //KING
         let attack_b = attack_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white & checkmask;// & !pin_hv & !pin_d12;
+        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white;// & !pin_hv & !pin_d12;
         
         while p != 0 {
             let b = p.tzcnt();
@@ -1075,7 +1075,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
                 let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
-                    score.push(get_score_move(6, victim as usize));
+                score.push(get_score_move(6, victim as usize));
                 capture.push((game.wk.tzcnt() <<9) + (p.tzcnt()<<1) );
             }
             else {
