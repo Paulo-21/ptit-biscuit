@@ -367,7 +367,7 @@ pub fn _flip_vertical( x : u64) -> u64 {
             ( (x >> 40) & (0x000000000000ff00) ) |
             ( (x >> 56) );
 }
-
+#[inline(always)]
 pub fn flip(x : u64) -> u64 {
     x^56
 }
