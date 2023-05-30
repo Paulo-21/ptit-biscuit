@@ -29,7 +29,7 @@ pub enum Piece {
 pub struct Game {
     pub wp : u64, pub wn : u64, pub wb : u64, pub wr : u64, pub wq : u64, pub wk : u64,
     pub bp : u64, pub bn : u64, pub bb : u64, pub br : u64, pub bq : u64, pub bk : u64,
-    pub en_passant : u8,
+    pub en_passant : u64,
     pub white_to_play : bool,
     pub wking_castle : bool,
     pub wqueen_castle : bool,
@@ -89,7 +89,7 @@ pub fn convert_square_to_move(a_move : u64) -> String {
     a.push((48 + b+1 ) as char );
     a
 }
-pub static mvv_lva : [[u64;12];12] = [
+pub static MVV_LVA : [[u64;12];12] = [
  	[105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605],
 	[104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604],
 	[103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603],
@@ -347,7 +347,7 @@ pub fn convert_string_to_bitboard(binary:usize) -> u64 {
 #[inline(always)]
 pub fn get_score_move (attacker : usize, victim : usize) -> u64 {
     //print!("{} {} , ", attacker, victim);
-    mvv_lva[attacker-1][victim-1]
+    MVV_LVA[attacker-1][victim-1]
 }
 
 pub fn sort_move(moves : &mut Vec<u64>, mut score : Vec<u64>) {
@@ -593,8 +593,8 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         //PAWN
         let unpinned_wp = game.wp & !pin_hv;
-        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask >> 7);
-        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & (black >> 9 ) & (checkmask >> 9);
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & ((black | game.en_passant) >> 7) & (checkmask >> 7) ;
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & ((black | game.en_passant) >> 9 ) & (checkmask >> 9);
         let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
         let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
@@ -634,8 +634,10 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             copy = copy.blsr();
         }
         //BISHOP
-        let mut p = game.wb & !(pin_hv | pin_d12);
-        let mut p1 = game.wb & pin_d12;
+        let mut p = (game.wb | game.wq) & !(pin_hv | pin_d12);
+        //p |= game.wq & !(pin_hv | pin_d12);
+        let mut p1 = (game.wb | game.wq) & pin_d12;
+        //p1  |= game.wq & pin_d12;
         while p != 0 {
             let mut att = diag_antid_moves(p.tzcnt(), occupied) & !white & checkmask;
             while att != 0 {
@@ -653,8 +655,11 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p1 = p1.blsr();
         }
         //ROOK
-        let mut p = game.wr & !(pin_hv | pin_d12);
-        let mut p1 = game.wr & pin_hv;
+        let mut p  = (game.wr | game.wq ) & !(pin_hv | pin_d12);
+        let mut p1 = (game.wr | game.wq ) & pin_hv;
+        //p |= game.wq & !(pin_hv | pin_d12);
+        //p1 |= game.wq & pin_hv;
+        //let mut p2 = game.wq & pin_d12;
         while p != 0 {
             let mut att = hv_moves(p.tzcnt(), occupied) & !white & checkmask;
             while att != 0 {
@@ -672,10 +677,10 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p1 = p1.blsr();
         }
         //QUEEN
-        let mut p = game.wq & !(pin_hv | pin_d12);
+        /*let mut p = game.wq & !(pin_hv | pin_d12);
         let mut p1 = game.wq & pin_hv;
-        let mut p2 = game.wq & pin_d12;
-        while p != 0 {
+        let mut p2 = game.wq & pin_d12;*/
+        /*while p != 0 {
             let mut att = (hv_moves(p.tzcnt(), occupied) | diag_antid_moves(p.tzcnt(), occupied)) & !white & checkmask;
             while att != 0 {
                 legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
@@ -698,7 +703,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
                 att = att.blsr();
             }
             p2 = p2.blsr();
-        }
+        }*/
         //KING
         let attack_b = attack_b(game);
         let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white;// & !pin_hv & !pin_d12;
@@ -720,8 +725,8 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         //_draw_bitboard(black);
         //PAWN
         let unpinned_bp = game.bp & !pin_hv;
-        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & (white << 7) & (checkmask << 7);
-        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & (white << 9 ) & (checkmask << 9);
+        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & ((white | game.en_passant) << 7) & (checkmask << 7);
+        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & ((white | game.en_passant) << 9 ) & (checkmask << 9);
         let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16)&(empty << 8)) & RANK_MASK[6] & (checkmask <<16);
         let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
         
@@ -758,8 +763,8 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
         }
 
         //BISHOP
-        let mut p = game.bb & !(pin_hv | pin_d12);
-        let mut p1 = game.bb & pin_d12;
+        let mut p  = (game.bb | game.bq) & !(pin_hv | pin_d12);
+        let mut p1 = (game.bb | game.bq) & pin_d12;
         while p != 0 {
             let mut att = diag_antid_moves(p.tzcnt(), occupied) & !black & checkmask;
             while att != 0 {
@@ -777,8 +782,8 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p1 = p1.blsr();
         }
         //ROOK
-        let mut p = game.br & !(pin_hv | pin_d12);
-        let mut p1 = game.br & pin_hv;
+        let mut p  = (game.br | game.bq) & !(pin_hv | pin_d12);
+        let mut p1 = (game.br | game.bq) & pin_hv;
         while p != 0 {
             let mut att = hv_moves(p.tzcnt(), occupied) & !black & checkmask;
             while att != 0 {
@@ -796,7 +801,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
             p1 = p1.blsr();
         }
         //QUEEN
-        let mut p = game.bq & !(pin_hv | pin_d12);
+        /*let mut p = game.bq & !(pin_hv | pin_d12);
         let mut p1 = game.bq & pin_hv;
         let mut p2 = game.bq & pin_d12;
         while p != 0 {
@@ -822,7 +827,7 @@ pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
                 att = att.blsr();
             }
             p2 = p2.blsr();
-        }
+        }*/
         //KING
         let attack_w = attack_w(game);
         let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black;
@@ -852,8 +857,8 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         //PAWN
         let unpinned_wp = game.wp & !pin_hv;
-        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & (black >> 7) & (checkmask >> 7);
-        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & (black >> 9 ) & (checkmask >> 9);
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & ((black | game.en_passant) >> 7) & (checkmask >> 7);
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & ((black | game.en_passant) >> 9 ) & (checkmask >> 9);
         let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
         let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
@@ -862,7 +867,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
             let piece = 1<<(pi_square+7);
             
             capture.push((pi_square <<9) | (((pi_square+7)<<1)) | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64);
-            let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+            let victim = ((piece & (game.bp | game.en_passant) )!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
             
@@ -872,7 +877,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
             let piece = 1<<(pi_square+9);
-            let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+            let victim = ((piece & (game.bp | game.en_passant))!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
             score.push(get_score_move(1, victim as usize));
@@ -1097,15 +1102,15 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
         //_draw_bitboard(black);
         //PAWN
         let unpinned_bp = game.bp & !pin_hv;
-        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & (white << 7) & (checkmask << 7);
-        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & (white << 9 ) & (checkmask << 9);
+        let mut p_at  = ((unpinned_bp & !FILE_MASKS[7])) & ((white | game.en_passant) << 7) & (checkmask << 7);
+        let mut p_at2 = ((unpinned_bp & !FILE_MASKS[0])) & ((white | game.en_passant) << 9 ) & (checkmask << 9);
         let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16)&(empty << 8)) & RANK_MASK[6] & (checkmask <<16);
         let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
             let piece = 1<<(pi_square-7);
-            let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
             + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
             + (piece & game.wq != 0) as u64 * 5 + (piece & game.wk != 0) as u64 *6;
             score.push(get_score_move(1, victim as usize));
@@ -1115,7 +1120,7 @@ pub fn get_legal_moves_fast_c(game : &Game) -> (Vec<u64>,Vec<u64>, Vec<u64>) {
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
             let piece = 1<<(pi_square-9);
-            let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
             + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
             + (piece & game.wq != 0) as u64 * 5 + (piece & game.wk != 0) as u64 * 6;
             score.push(get_score_move(1, victim as usize));
@@ -1406,6 +1411,13 @@ pub fn rank_attacks(occupied: u64, sq: u64) -> u64 {
     let o = (occupied >> (r + 1)) & 63;
     FIRST_RANK_ATTACKS[o as usize][f as usize] << r
 }
+pub fn convert_move_str_to_bitboard(square_str : &str ) -> u64 {
+    let mut iter1 = square_str[0..2].chars();
+    let un = iter1.next().unwrap() as u64-96;
+    let deux = iter1.next().unwrap() as u64-48;
+    let a = (deux-1) *8 +  un-1 ;
+    a
+}
 pub fn convert_move_to_bitboard(moves : &str) -> (u64, u64, Piece) {
     let mut length = 4;
 
@@ -1452,10 +1464,12 @@ pub fn compute_move_w(chessmove : (u64, u64, Piece), game : &mut Game) -> i8 {
     a = 1u64<<a;
     b = 1u64<<b;
     game.nb_coups+=1;
+    game.en_passant &= !RANK_MASK[5];
     let mut moves= 0;
     let mut from: &mut u64 = &mut 0;
     if (game.wp & a) != 0 {
         moves = possibility_wp(a, !occupied, black);
+        game.en_passant |= (a & RANK_MASK[1] != 0 &&  b & RANK_MASK[3] != 0) as u64 * b>>8;
         if moves & b != 0 && b & RANK_MASK[7] != 0 {
             game.wp &= !a;
             match chessmove.2 {
@@ -1578,11 +1592,13 @@ pub fn compute_move_w_thrust(chessmove : (u64, u64, Piece), game : &mut Game) ->
     let square_b = b;
     a = 1u64<<a;
     b = 1u64<<b;
+    game.en_passant &= !RANK_MASK[5];
     game.nb_coups+=1;
     //let mut moves= 0;
     let mut from: &mut u64 = &mut 0;
     if (game.wp & a) != 0 {
         //moves = possibility_wp(a, !occupied, black);
+        game.en_passant |= (a & RANK_MASK[1] != 0 &&  b & RANK_MASK[3] != 0) as u64 * b>>8;
         if /*moves & b != 0 &&*/ b & RANK_MASK[7] != 0 {
             game.wp &= !a;
             match chessmove.2 {
@@ -1705,6 +1721,7 @@ pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> 
     a = 1u64<<a;
     b = 1u64<<b;
     game.nb_coups+=1;
+    game.en_passant &= !RANK_MASK[5];
     //let mut moves= 0;
     let mut from: &mut u64 = &mut 0;
     game.hash ^= *SIDETOMOVE;
@@ -1714,6 +1731,7 @@ pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> 
         game.hash ^= PIECE_SQUARE[0][square_b as usize];
         //println!("new : {} {}", game.hash, PIECE_SQUARE[0][square_b as usize]);
         //moves = possibility_wp(a, !occupied, black);
+        game.en_passant |= (a & RANK_MASK[1] != 0 &&  b & RANK_MASK[3] != 0) as u64 * b>>8;
         if /*moves & b != 0 &&*/ b & RANK_MASK[7] != 0 {
             game.wp &= !a;
             match chessmove.2 {
@@ -1859,12 +1877,13 @@ pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     b = 1<<b;
     game.nb_coups+=1;
     game.hash ^= *SIDETOMOVE;
+    game.en_passant &= !RANK_MASK[2];
     //let mut moves = 0;
     let mut from = &mut (0);
     if (game.bp & a) != 0 {
         game.hash ^= PIECE_SQUARE[6][square_a as usize];
         game.hash ^= PIECE_SQUARE[6][square_b as usize];
-        //moves = possibility_bp2(a, !(black | white), white);
+        game.en_passant |= (a & RANK_MASK[6] != 0 &&  b & RANK_MASK[4] != 0) as u64 * b<<8;
         if /*moves & b != 0 &&*/ b & RANK_MASK[0] != 0 {
             game.bp &= !(1u64<<square_a);
             match chessmove.2 {
@@ -1996,10 +2015,12 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     a = 1<<a;
     b = 1<<b;
     game.nb_coups+=1;
+    game.en_passant &= !RANK_MASK[2];
     let mut moves = 0;
     let mut from = &mut (0);
     if (game.bp & a) != 0 {
         moves = possibility_bp2(a, !(black | white), white);
+        game.en_passant |= (a & RANK_MASK[6] != 0 &&  b & RANK_MASK[4] != 0) as u64 * b<<8;
         if moves & b != 0 && b & RANK_MASK[0] != 0 {
             game.bp &= !(1u64<<square_a);
             match chessmove.2 {
@@ -2081,6 +2102,7 @@ pub fn compute_move_b(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
             game.bqueen_castle = false;
         }
     }
+    game.en_passant = 0;
     if moves & b != 0 {
         (*from) &= !a;
         (*from) |=  b;
@@ -2113,10 +2135,12 @@ pub fn compute_move_b_thrust(chessmove : (u64,u64,Piece), game :&mut Game) -> i8
     a = 1<<a;
     b = 1<<b;
     game.nb_coups+=1;
+    game.en_passant &= !RANK_MASK[2];
     //let mut moves = 0;
     let mut from = &mut (0);
     if (game.bp & a) != 0 {
         //moves = possibility_bp2(a, !(black | white), white);
+        game.en_passant |= (a & RANK_MASK[6] != 0 &&  b & RANK_MASK[4] != 0) as u64 * b<<8;
         if /*moves & b != 0 &&*/ b & RANK_MASK[0] != 0 {
             game.bp &= !(1u64<<square_a);
             match chessmove.2 {
@@ -2126,14 +2150,12 @@ pub fn compute_move_b_thrust(chessmove : (u64,u64,Piece), game :&mut Game) -> i8
                 Piece::KNIGHT => game.bn |= 1u64<<square_b,
                 _ => { game.bp |= 1u64<<square_b; }
             }
-            //if white & b != 0 {
-                if game.wp & b != 0 { game.wp &= !b; return 1;}
-                else if game.wn & b != 0 { game.wn &= !b; return 3;}
-                else if game.wb & b != 0 { game.wb &= !b; return 3;}
-                else if game.wr & b != 0 { game.wr &= !b; return 5;}
-                else if game.wq & b != 0 { game.wq &= !b; return 11;}
-            //}
-            //return 1;
+            
+            if game.wp & b != 0 { game.wp &= !b; return 1;}
+            else if game.wn & b != 0 { game.wn &= !b; return 3;}
+            else if game.wb & b != 0 { game.wb &= !b; return 3;}
+            else if game.wr & b != 0 { game.wr &= !b; return 5;}
+            else if game.wq & b != 0 { game.wq &= !b; return 11;}
         }
         from = &mut game.bp;
     }
