@@ -3,7 +3,6 @@ use bitintr::{ Tzcnt, Blsr };//, Lzcnt, Andn};
 use std::collections::VecDeque;
 use crate::zobrist::*;
 
-
 static BASICSTART_CHESS_BOARD:[[char;8];8] = [
     ['r','n','b','q','k','b','n','r'],
     ['p','p','p','p','p','p','p','p'],
@@ -575,7 +574,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
     checked_mask
 }
 
-pub fn get_legal_moves_fast(game : &Game) -> Vec<u64>{
+pub fn get_legal_moves_fast(game : &Game) -> Vec<u64> {
     let mut legal_moves = Vec::with_capacity(30);
     let white = game.white();
     let black = game.black();
