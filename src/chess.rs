@@ -471,7 +471,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
         }
         kn = kn.blsr();
     }
-    let mut copy_wb = game.wb;
+    let mut copy_wb = game.wb | game.wq;
 
     while copy_wb != 0 {
         let attack = diag_antid_moves(copy_wb.tzcnt() , occupied);
@@ -483,7 +483,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
         }
         copy_wb = copy_wb.blsr();
     }
-    let mut copy_wr = game.wr;
+    let mut copy_wr = game.wr | game.wq;
     while copy_wr != 0 {
         
         let attack = hv_moves(copy_wr.tzcnt(), occupied);
@@ -495,7 +495,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
         }
         copy_wr = copy_wr.blsr();
     }
-    let mut copy_wq = game.wq;
+    /*let mut copy_wq = game.wq;
     while copy_wq != 0 {
         let attack = hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
         if attack & k != 0 {
@@ -505,7 +505,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
             checked_mask &= REC_TABLE[copy_wq.tzcnt()  as usize][k.tzcnt()  as usize] | (1<<copy_wq.tzcnt())
         }
         copy_wq = copy_wq.blsr();
-    }    
+    }*/   
 
     checked_mask
 }
@@ -535,7 +535,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
         }
         kn = kn.blsr();
     }
-    let mut copy_wb = game.bb;
+    let mut copy_wb = game.bb | game.bq;
 
     while copy_wb != 0 {
         let attack = diag_antid_moves(copy_wb.tzcnt() , occupied);
@@ -547,7 +547,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
         }
         copy_wb = copy_wb.blsr();
     }
-    let mut copy_wr = game.br;
+    let mut copy_wr = game.br | game.bq;
     while copy_wr != 0 {
         
         let attack = hv_moves(copy_wr.tzcnt(), occupied);
@@ -559,7 +559,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
         }
         copy_wr = copy_wr.blsr();
     }
-    let mut copy_wq = game.bq;
+    /*let mut copy_wq = game.bq;
     while copy_wq != 0 {
         let attack = hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
         if attack & k != 0 {
@@ -569,7 +569,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
             checked_mask &= REC_TABLE[copy_wq.tzcnt()  as usize][k.tzcnt()  as usize] | (1<<copy_wq.tzcnt())
         }
         copy_wq = copy_wq.blsr();
-    }    
+    }*/ 
 
     checked_mask
 }
