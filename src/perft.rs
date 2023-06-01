@@ -1,12 +1,12 @@
 use crate::chess::*;
 use crate::table_transposition::*;
-pub fn perft(game: Game, depth : i8) -> usize {
+pub fn perft(mut game: Game, depth : i8) -> usize {
     let mut nb_nodes = 0;
     
-    let legal_moves = get_legal_moves_fast(&game);
+    let legal_moves = get_legal_moves_fast(&mut game);
     //let legal_moves = get_legal_move(game.white_to_play,&game);
     
-    if depth == 1 {
+    if depth == 1 || legal_moves.is_empty() {
         return legal_moves.len();
     }
     for moveto in legal_moves {

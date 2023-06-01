@@ -194,7 +194,7 @@ pub fn _pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_n
 
     alpha
 }
-pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+pub fn _pvs_tt_best(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -272,7 +272,7 @@ pub fn _pvs_tt_best(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_
 
     alpha
 }
-pub fn _pvs_tt_best_root(game : &Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+pub fn _pvs_tt_best_root(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -618,7 +618,7 @@ pub fn alpha_beta_neg_tt_best_time(game: &Game, depth : u8, mut alpha : i32, mut
     //eprintln!("{}", convert_custum_to_str(best_move));
     (Some(value), best_move)
 }
-pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
+pub fn alpha_beta_neg_tt_best_time_fast(game: &mut Game, depth : u8, mut alpha : i32, mut beta : i32, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
     if tool.timeover.load(Ordering::Relaxed) {
         return (None,0);
     }
@@ -776,7 +776,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &Game, depth : u8, mut alpha : i32
     //eprintln!("{}", convert_custum_to_str(best_move));
     (Some(value), best_move)
 }
-pub fn mtd_f(game : &Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
+pub fn mtd_f(game : &mut Game, f : i32, depth : u8, tool : &mut SearchTools, nb_node : &mut u64, first : u64) -> (Option<i32>, u64) {
     //eprintln!("MTD-F inside {} {}", depth, f);
     let (mut g, mut bmove) = (f,first);
     

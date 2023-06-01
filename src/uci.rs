@@ -401,7 +401,7 @@ fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut Tran
     let mut res = (0,0,Piece::NONE);
     let lock = Arc::new(RwLock::new(res));
     let lock2 = lock.clone();
-    let game1 = *game;
+    let mut game1 = *game;
     let mut _stop = false;
     let arc = Arc::new(AtomicBool::new(false));
     let arc2 = arc.clone();
@@ -418,7 +418,7 @@ fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut Tran
         let (mut firstguess, mut bmove) = (0,0);
         for d in 1..depth+1 {
             nb_node = 0;
-            let (firstguess2, bmove2) = mtd_f(&game1, firstguess, d, &mut tool, &mut nb_node, bmove);
+            let (firstguess2, bmove2) = mtd_f(&mut game1, firstguess, d, &mut tool, &mut nb_node, bmove);
             match firstguess2 {
                 Some(e) => {
                     bmove = bmove2;
@@ -447,7 +447,7 @@ fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut Tran
             let (mut firstguess, mut bmove) = (0,0);
             for d in 1..depth+1 {
                 nb_node = 0;
-                let (firstguess2, bmove2) = mtd_f(&game1, firstguess, d, &mut tool, &mut nb_node, bmove);
+                let (firstguess2, bmove2) = mtd_f(&mut game1, firstguess, d, &mut tool, &mut nb_node, bmove);
                 match firstguess2 {
                     Some(e) => {
                         bmove = bmove2;
@@ -503,7 +503,7 @@ fn _compute_pvs(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64 
     (a,b, prom)
 }
 
-fn _compute_pvs_iter(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn _compute_pvs_iter(game : &mut Game, depth : u8, tt : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("PFS Iter");
     let mut nb_node : u64 = 0;
     let (mut _firstguess, bmove) = (0,0);
