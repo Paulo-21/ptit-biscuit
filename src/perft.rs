@@ -53,6 +53,9 @@ pub fn _perft_hash(game: Game, hash_table : &TranspositionTable , depth : i8) ->
     if depth == 1 {
         return legal_moves.len();
     }
+    if depth == 0 {
+        return 1;
+    }
     for moveto in legal_moves {
         let mut game1 = game;
         let moves = convert_custum_move(moveto);
