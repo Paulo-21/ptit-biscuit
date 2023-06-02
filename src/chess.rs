@@ -1442,7 +1442,7 @@ pub fn convert_move_to_bitboard(moves : &str) -> (u64, u64, Piece) {
     if moves.len() == 5 {
         let promote = iter1.next().unwrap();
         promotion_piece = match promote {
-            'q' => Piece::QUEEN ,
+            'q' | 'Q' => Piece::QUEEN ,
             'r' => Piece::ROOK,
             'b' => Piece::BISHOP,
             'n' => Piece::KNIGHT,

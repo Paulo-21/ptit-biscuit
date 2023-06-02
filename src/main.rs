@@ -27,7 +27,17 @@ fn main() {
                     game = get_bitboard_from_fen(arr);
                 },
                 3 => {
-
+                    let moves : Vec<&str> = argument.trim().split_ascii_whitespace().collect();
+                    for play in moves {
+                        let chessmove = convert_move_to_bitboard(play);
+                        if game.white_to_play {
+                            compute_move_w_thrust(chessmove, &mut game);
+                        }
+                        else {
+                            compute_move_b_thrust(chessmove, &mut game);
+                        }
+                        game.white_to_play^=true;
+                    }
                 },
                 _ => {}
             }
