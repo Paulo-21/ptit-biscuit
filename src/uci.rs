@@ -232,7 +232,7 @@ pub fn get_bitboard_from_fen(fen : Vec<&str>) -> Game {
             _=> {}
         }
     }
-    _draw_board(&game);
+    //_draw_board(&game);
     game.hash = init_zobrist_key(&game);
     game
 }

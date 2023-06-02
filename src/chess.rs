@@ -342,17 +342,19 @@ pub fn get_score_move (attacker : usize, victim : usize) -> u64 {
     MVV_LVA[attacker-1][victim-1]
 }
 
-pub fn sort_move(moves : &mut Vec<u64>, mut score : Vec<u64>) {
+pub fn sort_move(moves : &mut [u64], mut score : Vec<u64>) {
     for i in 1..score.len() {
         let mut j = i;
         while j > 0 && score[j] > score[j - 1] {
-            let temp = score[j];
+            score.swap(j, j-1);
+            moves.swap(j, j-1);
+            /*let temp = score[j];
             score[j] = score[j-1];
             score[j-1] = temp;
             let temp = moves[j];
             moves[j] = moves[j-1];
-            moves[j-1] = temp;
-            j = j - 1;
+            moves[j-1] = temp;*/
+            j -= 1;
         }
     }
 }   
@@ -864,7 +866,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
             let piece = 1<<(pi_square+7);
             
             capture.push((pi_square <<9) | (((pi_square+7)<<1)) | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64);
-            let victim = ((piece & (game.bp | game.en_passant) )!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+            let victim = ((piece & (game.bp | game.en_passant) )!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
             
@@ -874,7 +876,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
             let piece = 1<<(pi_square+9);
-            let victim = ((piece & (game.bp | game.en_passant))!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+            let victim = ((piece & (game.bp | game.en_passant))!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
             score.push(get_score_move(1, victim as usize));
@@ -902,7 +904,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     
@@ -926,7 +928,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(3, victim as usize));
@@ -946,7 +948,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(3, victim as usize));
@@ -969,7 +971,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(4, victim as usize));
@@ -989,7 +991,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(4, victim as usize));
@@ -1013,7 +1015,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize));
@@ -1033,7 +1035,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize));
@@ -1053,7 +1055,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b  = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & black != 0 {
-                    let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                    let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize));
@@ -1074,7 +1076,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
             let b = p.tzcnt();
             let piece = 1<<b;
             if 1<<b & black != 0 {
-                let victim = ((piece & game.bp)!= 0) as u64 * 1 + (piece & game.bn != 0) as u64 * 2 
+                let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                 score.push(get_score_move(6, victim as usize));
@@ -1107,7 +1109,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
             let piece = 1<<(pi_square-7);
-            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
             + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
             + (piece & game.wq != 0) as u64 * 5 + (piece & game.wk != 0) as u64 *6;
             if victim == 7 {
@@ -1125,7 +1127,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
         while p_at2 != 0 {
             let pi_square = p_at2.tzcnt();
             let piece = 1<<(pi_square-9);
-            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+            let victim = ((piece & (game.wp | game.en_passant))!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
             + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
             + (piece & game.wq != 0) as u64 * 5 + (piece & game.wk != 0) as u64 * 6;
             score.push(get_score_move(1, victim as usize));
@@ -1151,7 +1153,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(2, victim as usize));
@@ -1174,7 +1176,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(3, victim as usize));
@@ -1193,7 +1195,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(3, victim as usize));
@@ -1215,7 +1217,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(4, victim as usize));
@@ -1234,7 +1236,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(4, victim as usize));
@@ -1257,7 +1259,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize));
@@ -1276,7 +1278,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize));
@@ -1295,7 +1297,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
                 let b = att.tzcnt();
                 let piece = 1<<b;
                 if 1<<b & white !=0  {
-                    let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                    let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                     + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                     + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                     score.push(get_score_move(5, victim as usize)); 
@@ -1315,7 +1317,7 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> (Vec<u64>,Vec<u64>, Vec<u64>)
             let b = p.tzcnt();
             let piece = 1<<b;
             if 1<<b & white !=0  {
-                let victim = ((piece & game.wp)!= 0) as u64 * 1 + (piece & game.wn != 0) as u64 * 2 
+                let victim = ((piece & game.wp)!= 0) as u64  + (piece & game.wn != 0) as u64 * 2 
                 + (piece & game.wb != 0) as u64 * 3 + (piece & game.wr != 0) as u64 * 4 
                 + (piece & game.wq != 0) as u64 *5 + (piece & game.wk != 0) as u64 *6;
                 score.push(get_score_move(6, victim as usize));
