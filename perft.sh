@@ -1,3 +1,4 @@
+#!/bin/sh
 depth=$1
 fen=$2
 move=$3
