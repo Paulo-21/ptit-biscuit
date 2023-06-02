@@ -9,6 +9,9 @@ pub fn perft(mut game: Game, depth : i8) -> usize {
     if depth == 1 || legal_moves.is_empty() {
         return legal_moves.len();
     }
+    if depth == 0 {
+        return 1;
+    }
     for moveto in legal_moves {
         let mut game1 = game;
         //let moves = convert_custum_move(moveto);
