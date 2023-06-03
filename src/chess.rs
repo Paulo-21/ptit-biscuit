@@ -2254,25 +2254,22 @@ pub fn attack_w( game : &Game) -> u64 {
     let mut copy_wn = game.wn;
     while copy_wn != 0 {
         attack |= KNIGHT_MOVE[copy_wn.tzcnt() as usize];
-        copy_wn &= copy_wn-1;
+        copy_wn = copy_wn.blsr();
     }
-    /*f game.wn != 0 {
-        attack |= possibility_n(game.wn) & !white;
-    }*/
     let mut copy_wb = game.wb;
     while copy_wb != 0 {
         attack |= diag_antid_moves(copy_wb.tzcnt() , occupied);
-        copy_wb &= copy_wb-1;
+        copy_wb = copy_wb.blsr();
     }
     let mut copy_wr = game.wr;
     while copy_wr != 0 {
         attack |= hv_moves(copy_wr.tzcnt() , occupied);
-        copy_wr &= copy_wr-1;
+        copy_wr = copy_wr.blsr();
     }
     let mut copy_wq = game.wq;
     while copy_wq != 0 {
         attack |= hv_moves(copy_wq.tzcnt(), occupied) | diag_antid_moves(copy_wq.tzcnt(), occupied);
-        copy_wq &= copy_wq-1;
+        copy_wq = copy_wq.blsr();
     }
     //attack |= possibility_k(game.wk) & !white;
     attack |= KING_MOVE[game.wk.tzcnt() as usize];
@@ -2320,25 +2317,25 @@ pub fn attack_b( game : &Game) -> u64 {
     let mut attack = 0;
 
     attack |= attack_bp(game.bp, FULL);
-
-    if game.bn != 0 {
-        attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize];
-        //attack |= possibility_n(game.bn) & !black;
+    let mut copy = game.bn;
+    while copy != 0 {
+        attack |= KNIGHT_MOVE[copy.tzcnt() as usize];
+        copy = copy.blsr();
     }
     let mut copy_bb = game.bb;
     while copy_bb != 0 {
         attack |= diag_antid_moves(copy_bb.tzcnt() , occupied);
-        copy_bb &= copy_bb-1;
+        copy_bb = copy_bb.blsr();
     }
     let mut copy_br = game.br;
     while copy_br != 0 {
         attack |= hv_moves(copy_br.tzcnt(), occupied);
-        copy_br &= copy_br-1;
+        copy_br = copy_br.blsr();
     }
     let mut copy_bq = game.bq;
     while copy_bq != 0 {
         attack |= hv_moves(copy_bq.tzcnt(), occupied) | diag_antid_moves(copy_bq.tzcnt(), occupied) ;
-        copy_bq &= copy_bq-1;
+        copy_bq = copy_bq.blsr();
     }
     attack |= KING_MOVE[game.bk.tzcnt() as usize];
     //attack |= possibility_k(game.bk) & !black;
