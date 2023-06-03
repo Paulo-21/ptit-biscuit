@@ -592,8 +592,10 @@ pub fn get_legal_moves_fast(game : &mut Game) -> Vec<u64> {
                             (game.wp & pin_d12 & (black & pin_d12)>>7 & (checkmask >> 7));
         let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & ((black | game.en_passant) >> 9 ) & (checkmask >> 9)|
                             (game.wp & pin_d12 & (black & pin_d12)>>7 & (checkmask >> 7));
-        let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
-        let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
+        let mut p_at3 = (unpinned_wp) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16) |
+                            (game.wp & pin_hv & (empty & pin_hv)>>8 & RANK_MASK[1] & (empty & pin_hv)>>16 & (checkmask >> 16));
+        let mut p_at4 = (unpinned_wp) & (empty >> 8) & (checkmask >> 8) |
+                            (game.wp & pin_hv & (empty & pin_hv)>>8 & (checkmask >> 8));
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
@@ -728,8 +730,10 @@ pub fn get_legal_moves_fast(game : &mut Game) -> Vec<u64> {
                             (game.bp & pin_d12 & (white & pin_d12)<<7 & (checkmask << 7));
         let mut p_at2 = ((unpinned_bp & !pin_d12 & !FILE_MASKS[0])) & ((white | game.en_passant) << 9 ) & (checkmask << 9) |
                             (game.bp & pin_d12 & (white & pin_d12)<<9 & (checkmask << 9));
-        let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16) & (empty << 8)) & RANK_MASK[6] & (checkmask <<16);
-        let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
+        let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16) & (empty << 8)) & RANK_MASK[6] & (checkmask <<16) |
+                (game.bp & pin_hv & (empty & pin_hv)<<8 & RANK_MASK[6] & (empty & pin_hv)<<16 & (checkmask << 16));
+        let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) |
+                (game.bp & pin_hv & (empty & pin_hv)<<8 & (checkmask << 8));
         
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
