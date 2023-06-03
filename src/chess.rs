@@ -1632,6 +1632,7 @@ pub fn compute_move_w_thrust(chessmove : (u64, u64, Piece), game : &mut Game) ->
             return 1;
         }
         if b & game.en_passant != 0 {
+            game.wp &= !a;
             game.wp |= b;
             game.bp ^= b>>8;
             return 1;
