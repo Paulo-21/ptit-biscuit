@@ -101,7 +101,7 @@ fn input_go(command : Vec<&str>, game: &Game, tt : &mut TranspositionTable) {
             else if wtime > 0 {
                 move_time = wtime/25;
             }
-            if game.nb_coups < 4 && wtime > 0 {
+            if game.nb_coups <= 6 && wtime > 0 {
                 move_time = 4000;
             }
         },
@@ -120,7 +120,7 @@ fn input_go(command : Vec<&str>, game: &Game, tt : &mut TranspositionTable) {
             else if wtime > 0 {
                 move_time = wtime/25;
             }
-            if game.nb_coups <= 10 && btime > 0 {
+            if game.nb_coups <= 6 && btime > 0 {
                 move_time = 4000;
             }
         }
