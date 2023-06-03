@@ -460,7 +460,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
         let p = pawns.tzcnt();
         let m = attack_wp(1<<p, black);
         if m & k != 0 {
-            checked_mask &= p;
+            checked_mask &= 1<<p;
         }
         pawns = pawns.blsr();
     }
@@ -523,7 +523,7 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
         let p = pawns.tzcnt();
         let m = attack_bp(1<<p, white);
         if m & k != 0 {
-            checked_mask &= p;
+            checked_mask &= 1<<p;
         }
         pawns = pawns.blsr();
     }
