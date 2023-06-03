@@ -587,9 +587,11 @@ pub fn get_legal_moves_fast(game : &mut Game) -> Vec<u64> {
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
         game.en_passant &= !RANK_MASK[2];
         //PAWN
-        let unpinned_wp = game.wp & !pin_hv;
-        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & ((black | game.en_passant) >> 7) & (checkmask >> 7) ;
-        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & ((black | game.en_passant) >> 9 ) & (checkmask >> 9);
+        let unpinned_wp = game.wp & !pin_hv & !pin_d12;
+        let mut p_at = (unpinned_wp & !FILE_MASKS[0]) & ((black | game.en_passant) >> 7) & (checkmask >> 7) |
+                            (game.wp & pin_d12 & (black & pin_d12)>>7 & (checkmask >> 7));
+        let mut p_at2 = (unpinned_wp & !FILE_MASKS[7]) & ((black | game.en_passant) >> 9 ) & (checkmask >> 9)|
+                            (game.wp & pin_d12 & (black & pin_d12)>>7 & (checkmask >> 7));
         let mut p_at3 = (unpinned_wp & !pin_d12) & ((empty>>8) & (empty >> 16)) & RANK_MASK[1] & (checkmask >> 16);
         let mut p_at4 = (unpinned_wp & !pin_d12) & (empty >> 8) & (checkmask >> 8);
         
@@ -724,7 +726,8 @@ pub fn get_legal_moves_fast(game : &mut Game) -> Vec<u64> {
         //game.bp & pin_d12 & (white & pin_d12)<<7  
         let mut p_at= ((unpinned_bp & !pin_d12 & !FILE_MASKS[7])) & ((white | game.en_passant) << 7) & (checkmask << 7) |
                             (game.bp & pin_d12 & (white & pin_d12)<<7 & (checkmask << 7));
-        let mut p_at2 = ((unpinned_bp & !pin_d12 & !FILE_MASKS[0])) & ((white | game.en_passant) << 9 ) & (checkmask << 9);
+        let mut p_at2 = ((unpinned_bp & !pin_d12 & !FILE_MASKS[0])) & ((white | game.en_passant) << 9 ) & (checkmask << 9) |
+                            (game.bp & pin_d12 & (white & pin_d12)<<9 & (checkmask << 9));
         let mut p_at3 = (unpinned_bp & !pin_d12 ) & ( (empty << 16) & (empty << 8)) & RANK_MASK[6] & (checkmask <<16);
         let mut p_at4 = (unpinned_bp & !pin_d12) & ( (empty << 8)) & (checkmask<<8) ;
         
