@@ -31,9 +31,9 @@ pub fn uci () {
                 input_go(command, &game, &mut tt);
             },
             "perft" => {
-                let game = Game::default();
-                //let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
-                //let game = get_bitboard_from_fen(fen);
+                //let game = Game::default();
+                let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
+                let game = get_bitboard_from_fen(fen);
                 
                 let mut i = 1;
                 loop {
@@ -246,10 +246,10 @@ fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
         //println!("{}", one_move);
         let (a,b, prom) = convert_move_to_bitboard(one_move);
         let reponse = if game.white_to_play {
-            compute_move_w((a, b, prom), &mut game)
+            compute_move_w_hash((a, b, prom), &mut game)
         }
         else {
-            compute_move_b((a, b, prom), &mut game)
+            compute_move_b_hash((a, b, prom), &mut game)
         };
         if reponse >= 0 {
             game.white_to_play ^= true;
