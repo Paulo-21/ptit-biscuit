@@ -32,8 +32,8 @@ pub fn uci () {
             },
             "perft" => {
                 //let game = Game::default();
-                let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
-                let game = get_bitboard_from_fen(fen);
+                //let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
+                //let game = get_bitboard_from_fen(fen);
                 
                 let mut i = 1;
                 loop {

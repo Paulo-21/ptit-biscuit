@@ -1751,11 +1751,35 @@ pub fn compute_move_w_hash (chessmove : (u64, u64, Piece), game : &mut Game) -> 
                 _ => { game.wp |= b; }
             }
             //if black & b != 0 {
-                if game.bp & b != 0 {  game.bp &= !b; return 1;}
+            if game.bp & b != 0 {
+                game.hash ^= PIECE_SQUARE[6][square_b as usize]; 
+                game.bp &= !b; return 1;
+            }
+            else if game.bn & b != 0 { 
+                game.hash ^= PIECE_SQUARE[7][square_b as usize];
+                game.bn &= !b; return 3;}
+            else if game.bb & b != 0 { 
+                game.hash ^= PIECE_SQUARE[8][square_b as usize];
+                game.bb &= !b; return 3;}
+            else if game.br & b != 0 { 
+                    if square_b == 63 {
+                        game.bking_castle = false;
+                        game.hash ^= CASTLING_RIGHT[2];
+                    }
+                    else if square_b == 56 {
+                        game.bqueen_castle = false;
+                        game.hash ^= CASTLING_RIGHT[3];
+                    }
+                game.hash ^= PIECE_SQUARE[9][square_b as usize];
+                game.br &= !b; return 5;}
+            else if game.bq & b != 0 { 
+                game.hash ^= PIECE_SQUARE[10][square_b as usize];
+                game.bq &= !b; return 11;}
+                /*if game.bp & b != 0 {  game.bp &= !b; return 1;}
                 else if game.bn & b != 0 { game.bn &= !b; return 3;}
                 else if game.bb & b != 0 { game.bb &= !b; return 3;}
                 else if game.br & b != 0 { game.br &= !b; return 5;}
-                else if game.bq & b != 0 { game.bq &= !b; return 11;}
+                else if game.bq & b != 0 { game.bq &= !b; return 11;}*/
             //}
             return 1;
         }
