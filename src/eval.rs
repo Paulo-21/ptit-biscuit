@@ -17,79 +17,37 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
         else {
             return -90999 + (50 * game.nb_coups as i32);
         }
-    }/*
-    let white_score: i32 = (1100 * game.wq.popcnt() + 500*game.wr.popcnt() + 300*game.wb.popcnt() + 300*game.wn.popcnt() + 100*game.wp.popcnt()) as i32;
-    let black_score: i32 = (1100 * game.bq.popcnt() + 500*game.br.popcnt() + 300*game.bb.popcnt() + 300*game.bn.popcnt() + 100*game.bp.popcnt()) as i32;
-    let mut score = white_score - black_score;
-    let wpo = possibility_w(game);
-    let bpo = possibility_b(game);
-    let mut n = game.wn;
-    
-    score += (wpo.popcnt() ) as i32;
-    score -= (bpo.popcnt() ) as i32;
-    while n != 0 { //KNIGHT POS SCORE
-        let k = n.tzcnt();
-        score += KNIGHT_POS_SCORE[k as usize];
-        n = n.blsr();
     }
-    n = game.bn;
-    while n != 0 { //KNIGHT POS SCORE
-        let k = n.tzcnt();
-        score -= KNIGHT_POS_SCORE[k as usize];
-        n = n.blsr();
-    }
-    
-    if game.nb_coups < 13 {
+    let mut score = 0;
+    /*if game.nb_coups < 13 {
         score += ((wpo & SQUARE_CENTER).popcnt() * 3 ) as i32;
         score -= ((bpo & SQUARE_CENTER).popcnt()  * 3 )as i32;
-        score += _eval_begin();
-    }
-    else if game.nb_coups < 30 {
-        score += _eval_middle_game(game);
-    }
-    else {
-        score += _eval_late_game(game);
-    }
-    score*/
-
-    pesto_eval(game)
-}
-
-
-fn _eval_late_game(game : &Game) -> i32 {
-    let k = _KING_POS_END[flip(game.wk).tzcnt() as usize] - _KING_POS_END[game.bk.tzcnt() as usize];
-    k as i32
-}
-
-fn _eval_middle_game(game : &Game) -> i32 {
-    let mut n = 0;
-    let mut score = 0;
-    n = game.wp;
-    while n != 0 {
-        let k = n.tzcnt();
-        score += MG_PAWN_TABLE[k as usize];
-        n = n.blsr();
-    }
-    n = game.bp;
-    while n != 0 {
-        let k = n.tzcnt();
-        score -= MG_PAWN_TABLE[k as usize];
-        n = n.blsr();
-    }
-    /*n = game.wn;
-    while n != 0 {
-        let k = n.tzcnt();
-        score += MG_PAWN_TABLE[k as usize];
-        n = n.blsr();
-    }
-    n = game.bn;
-    while n != 0 {
-        let k = n.tzcnt();
-        score -= MG_PAWN_TABLE[k as usize];
-        n = n.blsr();
+     
     }*/
-    score += _KING_POS_MIDDLE[flip(game.wk).tzcnt() as usize] - _KING_POS_MIDDLE[game.bk.tzcnt() as usize];
-    score 
+    score += pesto_eval(game);
+    score += double_pawn(game);
+    score
+}
+#[inline]
+fn double_pawn(game : &Game) -> i32 {
+    let mut s = 0;
+    s -= ((game.wp & FILE_MASKS[0]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[1]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[2]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[3]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[4]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[5]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[6]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[7]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[0]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[1]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[2]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[3]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[4]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[5]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[6]).popcnt() > 1) as i32 * 5;
+    s += ((game.bp & FILE_MASKS[7]).popcnt() > 1) as i32 * 5;
+    s
 }
 
 #[inline]
@@ -177,19 +135,17 @@ fn pesto_eval(game: &Game) -> i32 {
     while n != 0 {
         mg_score += MG_KING_TABLE[flip(n.tzcnt()) as usize];
         eg_score += EG_KING_TABLE[flip(n.tzcnt()) as usize];
-        game_phase +=4;
         n = n.blsr();
     }
     n = game.bk;
     while n != 0 {
         mg_score -= MG_KING_TABLE[n.tzcnt() as usize];
         eg_score -= EG_KING_TABLE[n.tzcnt() as usize];
-        game_phase +=4;
         n = n.blsr();
     }
 
     if game_phase > 24 { game_phase = 24 };
-    (mg_score * game_phase + eg_score * (24-game_phase))/24
+    ((mg_score * game_phase) + (eg_score * (24-game_phase)))/24
 }
 
 
