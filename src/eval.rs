@@ -25,7 +25,7 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
      
     }*/
     score += pesto_eval(game);
-    score += double_pawn(game);
+    //score += double_pawn(game);
     score
 }
 #[inline]
@@ -59,8 +59,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*PAWN  */
     let mut n = game.wp;
     while n != 0 {
-        mg_score += MG_VALUE[0] + MG_PAWN_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[0] + EG_PAWN_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_VALUE[0] + MG_PAWN_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_VALUE[0] + EG_PAWN_TABLE[flip(n).tzcnt() as usize];
         n = n.blsr();
     }
     n = game.bp;
@@ -73,8 +73,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*KNIGHT */
     n = game.wn;
     while n != 0 {
-        mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE[flip(n).tzcnt() as usize];
         game_phase +=1;
         n = n.blsr();
     }
@@ -88,8 +88,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Bishop */
     n = game.wb;
     while n != 0 {
-        mg_score += MG_VALUE[2] + MG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[2] + EG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_VALUE[2] + MG_BISHOP_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_VALUE[2] + EG_BISHOP_TABLE[flip(n).tzcnt() as usize];
         game_phase +=1;
         n = n.blsr();
     }
@@ -103,8 +103,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Rook */
     n = game.wr;
     while n != 0 {
-        mg_score += MG_VALUE[3] + MG_ROOK_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[3] + EG_ROOK_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_VALUE[3] + MG_ROOK_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_VALUE[3] + EG_ROOK_TABLE[flip(n).tzcnt() as usize];
         game_phase +=2;
         n = n.blsr();
     }
@@ -118,8 +118,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Queen */
     n = game.wq;
     while n != 0 {
-        mg_score += MG_VALUE[4] + MG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[4] + EG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_VALUE[4] + MG_QUEEN_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_VALUE[4] + EG_QUEEN_TABLE[flip(n).tzcnt() as usize];
         game_phase +=4;
         n = n.blsr();
     }
@@ -133,8 +133,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*King */
     n = game.wk;
     while n != 0 {
-        mg_score += MG_KING_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_KING_TABLE[flip(n.tzcnt()) as usize];
+        mg_score += MG_KING_TABLE[flip(n).tzcnt() as usize];
+        eg_score += EG_KING_TABLE[flip(n).tzcnt() as usize];
         n = n.blsr();
     }
     n = game.bk;
