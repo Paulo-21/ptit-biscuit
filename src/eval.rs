@@ -25,7 +25,7 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
      
     }*/
     score += pesto_eval(game);
-    //score += double_pawn(game);
+    score += double_pawn(game);
     score
 }
 #[inline]
