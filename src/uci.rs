@@ -2,6 +2,8 @@ use std::{io, sync::RwLock};
 use std::thread;
 use std::sync::Arc;
 use std::time::{Instant, Duration};
+use bitintr::{Tzcnt, Blsr};
+
 use crate::chess::*;
 use crate::search::*;
 use crate::table_transposition::TranspositionTable;
@@ -9,10 +11,17 @@ use crate::perft::*;
 use crate::search_tools::SearchTools;
 use crate::zobrist::init_zobrist_key;
 use std::sync::atomic::{AtomicBool, Ordering};
-
+use crate::eval::*;
 pub fn uci () {
     let mut game = Game::default();
     let mut tt = TranspositionTable::with_memory(8<<22);
+    /*let piece = 1<<40;
+    _draw_bitboard(piece);
+
+    _draw_bitboard(1<<flip((piece).tzcnt()));
+    println!("{}", MG_BISHOP_TABLE[(piece).tzcnt() as usize]);
+    println!("{}", MG_BISHOP_TABLE[flip(piece.tzcnt()) as usize]);
+    */
     loop {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).unwrap();

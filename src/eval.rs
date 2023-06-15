@@ -31,22 +31,22 @@ pub fn eval(game : &Game, nmoves:i32 ) -> i32 {
 #[inline]
 fn double_pawn(game : &Game) -> i32 {
     let mut s = 0;
-    s -= ((game.wp & FILE_MASKS[0]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[1]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[2]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[3]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[4]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[5]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[6]).popcnt() > 1) as i32 * 5;
-    s -= ((game.wp & FILE_MASKS[7]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[0]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[1]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[2]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[3]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[4]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[5]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[6]).popcnt() > 1) as i32 * 5;
-    s += ((game.bp & FILE_MASKS[7]).popcnt() > 1) as i32 * 5;
+    s -= ((game.wp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
     s
 }
 
@@ -59,8 +59,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*PAWN  */
     let mut n = game.wp;
     while n != 0 {
-        mg_score += MG_VALUE[0] + MG_PAWN_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_VALUE[0] + EG_PAWN_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_VALUE[0] + MG_PAWN_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_VALUE[0] + EG_PAWN_TABLE[flip(n.tzcnt()) as usize];
         n = n.blsr();
     }
     n = game.bp;
@@ -73,8 +73,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*KNIGHT */
     n = game.wn;
     while n != 0 {
-        mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
         game_phase +=1;
         n = n.blsr();
     }
@@ -88,8 +88,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Bishop */
     n = game.wb;
     while n != 0 {
-        mg_score += MG_VALUE[2] + MG_BISHOP_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_VALUE[2] + EG_BISHOP_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_VALUE[2] + MG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_VALUE[2] + EG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
         game_phase +=1;
         n = n.blsr();
     }
@@ -103,8 +103,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Rook */
     n = game.wr;
     while n != 0 {
-        mg_score += MG_VALUE[3] + MG_ROOK_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_VALUE[3] + EG_ROOK_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_VALUE[3] + MG_ROOK_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_VALUE[3] + EG_ROOK_TABLE[flip(n.tzcnt()) as usize];
         game_phase +=2;
         n = n.blsr();
     }
@@ -118,8 +118,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*Queen */
     n = game.wq;
     while n != 0 {
-        mg_score += MG_VALUE[4] + MG_QUEEN_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_VALUE[4] + EG_QUEEN_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_VALUE[4] + MG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_VALUE[4] + EG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
         game_phase +=4;
         n = n.blsr();
     }
@@ -133,8 +133,8 @@ fn pesto_eval(game: &Game) -> i32 {
     /*King */
     n = game.wk;
     while n != 0 {
-        mg_score += MG_KING_TABLE[flip(n).tzcnt() as usize];
-        eg_score += EG_KING_TABLE[flip(n).tzcnt() as usize];
+        mg_score += MG_KING_TABLE[flip(n.tzcnt()) as usize];
+        eg_score += EG_KING_TABLE[flip(n.tzcnt()) as usize];
         n = n.blsr();
     }
     n = game.bk;
@@ -313,6 +313,8 @@ static MG_VALUE : [i32;6] = [ 82, 337, 365, 477, 1025,  0];
 
 static EG_VALUE : [i32;6] = [ 94, 281, 297, 512,  936,  0];
 
+
+pub const DOUBLE_PAWN_PENALITY : i32 = 10;
 pub fn _flip_vertical( x : u64) -> u64 {
     return  ( (x << 56)                           ) |
             ( (x << 40) & (0x00ff000000000000) ) |
@@ -325,5 +327,8 @@ pub fn _flip_vertical( x : u64) -> u64 {
 }
 #[inline(always)]
 pub fn flip(x : u64) -> u64 {
-    x^56
+    //x^56
+    //x.swap_bytes()
+    x^63
+    //_flip_vertical(x)
 }
