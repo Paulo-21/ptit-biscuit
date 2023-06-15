@@ -1966,7 +1966,7 @@ pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
     else if game.bk & a != 0 {
         game.hash ^= PIECE_SQUARE[11][square_a as usize];
         game.hash ^= PIECE_SQUARE[11][square_b as usize];
-        if square_a == 60 && square_b == 58 && game.bking_castle && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
+        if square_a == 60 && square_b == 58 {// && game.bking_castle && (black | white) & (2u64.pow(58) + 2u64.pow(57)) == 0 && possibility_w(game) & (2u64.pow(58) + 2u64.pow(57)) == 0 {
                 //println!("Grand roque");
                 game.bking_castle = false;
                 game.bqueen_castle = false;
@@ -1980,7 +1980,7 @@ pub fn compute_move_b_hash(chessmove : (u64,u64,Piece), game :&mut Game) -> i8 {
             //check if no piece is between
             //check if square between isn't attacked
         
-        else if square_a == 60 && square_b == 62  && game.bqueen_castle && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
+        else if square_a == 60 && square_b == 62 {// && game.bqueen_castle && (black | white) & (2u64.pow(61) + 2u64.pow(62)) == 0 && possibility_w(game) & (2u64.pow(61) + 2u64.pow(62)) == 0 {
                 game.bking_castle = false;
                 game.bqueen_castle = false;
                 game.bk &= !a;
