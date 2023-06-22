@@ -3,16 +3,17 @@ use crate::table_transposition::*;
 pub fn perft(mut game: Game, depth : i8) -> usize {
     let mut nb_nodes = 0;
     
-    let legal_moves = get_legal_moves_fast(&mut game);
+    let (legal_moves, len) = get_legal_moves_fast(&mut game);
     //let legal_moves = get_legal_move(game.white_to_play,&game);
     
-    if depth == 1 || legal_moves.is_empty() {
-        return legal_moves.len();
+    if depth == 1 || legal_moves[0] == 0 {
+        return len;
     }
     if depth == 0 {
         return 1;
     }
     for moveto in legal_moves {
+        if moveto == 0 { break; }
         let mut game1 = game;
         //let moves = convert_custum_move(moveto);
         let moves = convert_custum_move2(moveto);
@@ -28,6 +29,8 @@ pub fn perft(mut game: Game, depth : i8) -> usize {
     nb_nodes
 }
 pub fn perft_divide(mut game : Game, depth : i8) {
+}
+/*pub fn perft_divide(mut game : Game, depth : i8) {
     let legal_moves = get_legal_moves_fast(&mut game);
     let mut nb_nodes_tot = 0;
     for moveto in legal_moves {
@@ -81,4 +84,4 @@ pub fn _perft_hash(mut game: Game, depth : i8, tt : &mut TranspositionTable) -> 
         nb_nodes += _perft_hash(game1, depth-1, tt);
     }
     nb_nodes
-}
+}*/
