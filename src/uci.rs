@@ -2,7 +2,7 @@ use std::{io, sync::RwLock};
 use std::thread;
 use std::sync::Arc;
 use std::time::{Instant, Duration};
-use bitintr::{Tzcnt, Blsr};
+
 
 use crate::chess::*;
 use crate::search::*;
@@ -11,7 +11,7 @@ use crate::perft::*;
 use crate::search_tools::SearchTools;
 use crate::zobrist::init_zobrist_key;
 use std::sync::atomic::{AtomicBool, Ordering};
-use crate::eval::*;
+
 pub fn uci () {
     let mut game = Game::default();
     let mut tt = TranspositionTable::with_memory(8<<22);
@@ -405,7 +405,7 @@ fn _compute_alpha_beta_neg_tt(game : &Game, depth : u8, tt : &mut TranspositionT
 }
 
 
-fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut TranspositionTable) -> (u64, u64, Piece) {
+fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, _tt1 : &mut TranspositionTable) -> (u64, u64, Piece) {
     eprintln!("MTD-F");
     let mut res = (0,0,Piece::NONE);
     let lock = Arc::new(RwLock::new(res));

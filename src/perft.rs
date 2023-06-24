@@ -1,5 +1,5 @@
 use crate::chess::*;
-use crate::table_transposition::*;
+
 pub fn perft(mut game: Game, depth : i8) -> usize {
     let mut nb_nodes = 0;
     
@@ -28,7 +28,7 @@ pub fn perft(mut game: Game, depth : i8) -> usize {
     }
     nb_nodes
 }
-pub fn perft_divide(mut game : Game, depth : i8) {
+pub fn perft_divide(_game : Game, _depth : i8) {
 }
 /*pub fn perft_divide(mut game : Game, depth : i8) {
     let legal_moves = get_legal_moves_fast(&mut game);
