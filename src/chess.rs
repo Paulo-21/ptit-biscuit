@@ -604,7 +604,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let pi_square = p_at.tzcnt();
             let piece = 1<<pi_square;
             //legal_moves.push((pi_square <<9) | (((pi_square+7)<<1)) | (((piece)&RANK_MASK[6]) != 0) as u64);
-            legal_moves[i]=((pi_square <<9) | (((pi_square+7)<<1)) | (((piece)&RANK_MASK[6]) != 0) as u64);
+            legal_moves[i]=(pi_square <<9) | (((pi_square+7)<<1)) | (((piece)&RANK_MASK[6]) != 0) as u64;
             i+=1;
             p_at = p_at.blsr();
         }
@@ -612,7 +612,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let pi_square = p_at2.tzcnt();
             let piece = 1<<pi_square;
             //legal_moves.push((pi_square <<9) | ((pi_square+9)<<1)  | (((piece)&RANK_MASK[6]) != 0) as u64);
-            legal_moves[i]=((pi_square <<9) | ((pi_square+9)<<1)  | (((piece)&RANK_MASK[6]) != 0) as u64);
+            legal_moves[i]=(pi_square <<9) | ((pi_square+9)<<1)  | (((piece)&RANK_MASK[6]) != 0) as u64;
             i+=1;
             p_at2 = p_at2.blsr();
         }
@@ -620,7 +620,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let pi_square = p_at3.tzcnt();
             let piece = 1<<pi_square;
             //legal_moves.push((pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64);
-            legal_moves[i] = ((pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64);
+            legal_moves[i] = (pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64;
             i+=1;
             p_at3 = p_at3.blsr();
         }
@@ -628,7 +628,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let pi_square = p_at4.tzcnt();
             let piece = 1<<pi_square;
             //legal_moves.push((pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64);
-            legal_moves[i]=((pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64);
+            legal_moves[i]=(pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64;
             i+=1;
             p_at4 = p_at4.blsr();
         }
@@ -639,7 +639,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let mut att = KNIGHT_MOVE[copy.tzcnt() as usize] & !white & checkmask;
             while att != 0 {
                 //legal_moves.push((copy.tzcnt() <<9) + (att.tzcnt()<<1) );
-                legal_moves[i]=((copy.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves[i]=(copy.tzcnt() <<9) + (att.tzcnt()<<1);
                 i+=1;
                 att = att.blsr();
             }
@@ -654,7 +654,7 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
             let mut att = diag_antid_moves(p.tzcnt(), occupied) & !white & checkmask;
             while att != 0 {
                 //legal_moves.push((p.tzcnt() <<9) + (att.tzcnt()<<1) );
-                legal_moves[i]=((p.tzcnt() <<9) + (att.tzcnt()<<1) );
+                legal_moves[i]=(p.tzcnt() <<9) + (att.tzcnt()<<1);
                 i+=1;
                 att = att.blsr();
             }
@@ -879,8 +879,8 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
             
-            score[c_i] = (get_score_move(1, victim as usize));
-            capture[c_i] = ((pi_square <<9) | (((pi_square+7)<<1)) | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64);
+            score[c_i] = get_score_move(1, victim as usize);
+            capture[c_i] = (pi_square <<9) | (((pi_square+7)<<1)) | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64;
             c_i +=1;
             p_at = p_at.blsr();
         }
@@ -890,22 +890,22 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
             let victim = ((piece & (game.bp | game.en_passant))!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
             + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
             + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
-            score[c_i] = (get_score_move(1, victim as usize));
-            capture[c_i] = ((pi_square <<9) | ((pi_square+9)<<1)  | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64);
+            score[c_i] = get_score_move(1, victim as usize);
+            capture[c_i] = (pi_square <<9) | ((pi_square+9)<<1)  | (((1<<pi_square)&RANK_MASK[6]) != 0) as u64;
             p_at2 = p_at2.blsr();
             c_i +=1;
         }
         while p_at3 != 0 {
             let pi_square = p_at3.tzcnt();
             let piece = 1<<pi_square;
-            legal_moves[q_i] = ((pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64);
+            legal_moves[q_i] = (pi_square <<9) | ((pi_square+16)<<1)  | (((piece)&RANK_MASK[6]) !=0) as u64;
             p_at3 = p_at3.blsr();
             q_i +=1;
         }
         while p_at4 != 0 {
             let pi_square = p_at4.tzcnt();
             let piece = 1<<pi_square;
-            legal_moves[q_i] = ((pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64);
+            legal_moves[q_i] = (pi_square <<9) | ((pi_square+8)<<1)  | (((piece)&RANK_MASK[6])!=0) as u64;
             p_at4 = p_at4.blsr();
             q_i +=1;
         }
@@ -922,12 +922,12 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
                     
-                    score[c_i] = (get_score_move(2, victim as usize));
-                    capture[c_i] =((copy.tzcnt() <<9) + (b<<1) );
+                    score[c_i] = get_score_move(2, victim as usize);
+                    capture[c_i] =(copy.tzcnt() <<9) + (b<<1);
                     c_i+=1;
                 }
                 else {
-                    legal_moves[q_i] = ((copy.tzcnt() <<9) + (b<<1) );
+                    legal_moves[q_i] = (copy.tzcnt() <<9) + (b<<1);
                     q_i +=1;
                 }
                 att = att.blsr();
@@ -947,12 +947,12 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
                     let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
-                    score[c_i] =(get_score_move(3, victim as usize));
-                    capture[c_i] =((p.tzcnt() <<9) + (b<<1) );
+                    score[c_i] = get_score_move(3, victim as usize);
+                    capture[c_i] = (p.tzcnt() <<9) + (b<<1);
                     c_i+=1;
                 }
                 else {
-                    legal_moves[q_i] = ((p.tzcnt() <<9) + (b<<1) );
+                    legal_moves[q_i] = (p.tzcnt() <<9) + (b<<1);
                     q_i +=1;
                 }
                 att = att.blsr();
@@ -969,8 +969,8 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
                     let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
-                    score[c_i] = (get_score_move(3, victim as usize));
-                    capture[c_i] = ((p1.tzcnt() <<9) + (b<<1) );
+                    score[c_i] = get_score_move(3, victim as usize);
+                    capture[c_i] = (p1.tzcnt() <<9) + (b<<1);
                     c_i +=1;
                 }
                 else {
@@ -994,8 +994,8 @@ pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15]
                     let victim = ((piece & game.bp)!= 0) as u64  + (piece & game.bn != 0) as u64 * 2 
                     + (piece & game.bb != 0) as u64 * 3 + (piece & game.br != 0) as u64 * 4 
                     + (piece & game.bq != 0) as u64 *5 + (piece & game.bk != 0) as u64 *6;
-                    score[c_i] =(get_score_move(4, victim as usize));
-                    capture[c_i] =((p.tzcnt() <<9) + (b<<1) );
+                    score[c_i] =get_score_move(4, victim as usize);
+                    capture[c_i] =(p.tzcnt() <<9) + (b<<1);
                     c_i +=1;
                 }
                 else {
