@@ -194,7 +194,7 @@ pub fn _pvs_tt(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_n
 
     alpha
 }
-pub fn _pvs_tt_best(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
+/*pub fn _pvs_tt_best(game : &mut Game, depth : u8, mut alpha:i32, mut beta : i32, nb_node : &mut u64, tt : &mut TranspositionTable, first_move:u64) -> i32 {
     let alpha_orgi = alpha;
     let mut hash_move = 0;
     let tt_entry = tt.get(game.hash);
@@ -349,7 +349,7 @@ pub fn _pvs_tt_best_root(game : &mut Game, depth : u8, mut alpha:i32, mut beta :
     tt.set(game.hash, depth, score, bestmove , node_t);
 
     alpha
-}
+}*/
 pub fn _alpha_beta_neg(game: &Game, depth : u8, mut alpha : i32, beta : i32, nb_node : &mut u64) -> i32 {
     let legal_moves = get_legal_move(game.white_to_play, game);
     *nb_node+=1;
@@ -639,15 +639,16 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &mut Game, depth : u8, mut alpha :
             if alpha >= beta {
                 return (Some(tt_entry.eval), tt_entry.bestmove);
             }
-        }        
+        }
         hash_move = tt_entry.bestmove;
     }
     
     //let mut legal_moves = get_legal_moves_fast(game);
-    let (mut capture, legal_moves, score_moves) = get_legal_moves_fast_c(game);
+    let (mut capture, legal_moves, score_moves, c_len, q_len) = get_legal_moves_fast_c(game);
     
-    if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
-        let mut eval = eval(game, (capture.len() + legal_moves.len()) as i32);
+    //if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
+    if depth == 0 || (q_len == 0 && c_len == 0) {
+        let mut eval = eval(game, (q_len + c_len) as i32);
         //eval *= -1 * !game.white_to_play as i32;
         if !game.white_to_play {
             eval *= -1;
@@ -711,6 +712,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &mut Game, depth : u8, mut alpha :
     let mut i = 0;
     sort_move(&mut capture, score_moves);
     for moveto_play in capture {
+        if moveto_play == 0 {
+            break;
+        }
         if hash_move == moveto_play || first == moveto_play && i>1{
             continue;
         }
@@ -741,6 +745,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(game: &mut Game, depth : u8, mut alpha :
         }
     }
     for moveto_play in legal_moves{
+        if moveto_play == 0 {
+            break;
+        }
         let (a,b, prom) = convert_custum_move2(moveto_play);
         let mut game1 = *game;
         if game.white_to_play { compute_move_w_hash((a, b, prom), &mut game1); }

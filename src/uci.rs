@@ -482,7 +482,7 @@ fn compute_mdt_f_iter(game : &Game, depth : u8, move_time : i32, tt1 : &mut Tran
     
 }
 
-
+/*
 fn _compute_pvs(game : &Game, depth : u8, tt : &mut TranspositionTable) -> (u64 , u64, Piece) {
     eprintln!("PRINCIPAL VARIATION SEARCH");
     let alpha = i32::MIN>>1;
@@ -530,4 +530,4 @@ fn _compute_pvs_iter(game : &mut Game, depth : u8, tt : &mut TranspositionTable)
     }
     let res = convert_custum_move((bmove, Piece::QUEEN));
     return res;
-}
+}*/
