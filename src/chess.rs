@@ -843,13 +843,13 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
     }
     (legal_moves, i)
 }
-pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;60], [u64;15], usize, usize) {//(Vec<u64>,Vec<u64>, Vec<u64>) {
+pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;70], [u64;15], usize, usize) {//(Vec<u64>,Vec<u64>, Vec<u64>) {
     /*let mut capture = Vec::with_capacity(10);
     let mut score = Vec::with_capacity(10);
     let mut legal_moves = Vec::with_capacity(30);*/
     let mut capture = [0u64; 15];
     let mut score = [0u64; 15];
-    let mut legal_moves = [0u64; 60];
+    let mut legal_moves = [0u64; 70];
     let mut c_i = 0;
     let mut q_i = 0;
     let white = game.white();
