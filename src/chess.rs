@@ -13,7 +13,8 @@ static BASICSTART_CHESS_BOARD:[[char;8];8] = [
     ['P','P','P','P','P','P','P','P'],
     ['R','N','B','Q','K','B','N','R'],
 ];
-
+const MAX_CAPTURE : usize = 20;
+const MAX_QUIET_MOVE : usize = 70;
 #[derive(Debug, Copy, Clone)]
 pub enum Piece {
     NONE,
@@ -343,7 +344,7 @@ pub fn get_score_move (attacker : usize, victim : usize) -> u64 {
 }
 
 //pub fn sort_move(moves : &mut [u64], mut score : Vec<u64>) {
-pub fn sort_move(moves : &mut [u64;15], mut score : [u64;15]) {
+pub fn sort_move(moves : &mut [u64;MAX_CAPTURE], mut score : [u64;MAX_CAPTURE]) {
     for i in 1..score.len() {
         let mut j = i;
         while j > 0 && score[j] > score[j - 1] {
@@ -843,13 +844,13 @@ pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
     }
     (legal_moves, i)
 }
-pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;15], [u64;70], [u64;15], usize, usize) {//(Vec<u64>,Vec<u64>, Vec<u64>) {
+pub fn get_legal_moves_fast_c(game : &mut Game) -> ([u64;MAX_CAPTURE], [u64;MAX_QUIET_MOVE], [u64;MAX_CAPTURE], usize, usize) {//(Vec<u64>,Vec<u64>, Vec<u64>) {
     /*let mut capture = Vec::with_capacity(10);
     let mut score = Vec::with_capacity(10);
     let mut legal_moves = Vec::with_capacity(30);*/
-    let mut capture = [0u64; 15];
-    let mut score = [0u64; 15];
-    let mut legal_moves = [0u64; 70];
+    let mut capture = [0u64; MAX_CAPTURE];
+    let mut score = [0u64; MAX_CAPTURE];
+    let mut legal_moves = [0u64; MAX_QUIET_MOVE];
     let mut c_i = 0;
     let mut q_i = 0;
     let white = game.white();
