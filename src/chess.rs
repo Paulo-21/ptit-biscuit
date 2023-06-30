@@ -14,7 +14,7 @@ static BASICSTART_CHESS_BOARD:[[char;8];8] = [
     ['R','N','B','Q','K','B','N','R'],
 ];
 const MAX_CAPTURE : usize = 20;
-const MAX_QUIET_MOVE : usize = 70;
+const MAX_QUIET_MOVE : usize = 90;
 #[derive(Debug, Copy, Clone)]
 pub enum Piece {
     NONE,
