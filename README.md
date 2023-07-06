@@ -8,7 +8,7 @@ MTD-f<br>
 bitboard based<br>
 PeSTO's evaluation<br>
 MVV LVA ordering<br>
-perft6 0.780s (150Mnodes/sec)<br>
+perft6 0.580s (200Mnodes/sec)<br>
 <br>
 
 TODO : <br>
