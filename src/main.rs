@@ -46,7 +46,7 @@ fn main() {
         perft_divide(game, depth);
     }
     else {
-        //env::set_var("RUST_BACKTRACE", "1");
+        //env::set_var("RUST_BACKTRACE", "full");
         eprintln!("P'TIT BISCUIT");
         uci();
     }

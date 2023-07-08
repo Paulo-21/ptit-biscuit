@@ -578,9 +578,9 @@ pub fn get_checked_mask_w(game : &Game) -> u64 {
     checked_mask
 }
 
-pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;60], usize) {//Vec<u64> {
+pub fn get_legal_moves_fast(game : &mut Game) -> ([u64;70], usize) {//Vec<u64> {
     //let mut legal_moves = Vec::with_capacity(30);
-    let mut legal_moves = [0u64;60] ;
+    let mut legal_moves = [0u64;70] ;
     let mut i = 0;
     let white = game.white();
     let black = game.black();

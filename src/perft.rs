@@ -28,13 +28,11 @@ pub fn perft(mut game: Game, depth : i8) -> usize {
     }
     nb_nodes
 }
-pub fn perft_divide(_game : Game, _depth : i8) {
-}
-/*pub fn perft_divide(mut game : Game, depth : i8) {
-    let legal_moves = get_legal_moves_fast(&mut game);
+pub fn perft_divide(mut game : Game, depth : i8) {
+    let (legal_moves, _len) = get_legal_moves_fast(&mut game);
     let mut nb_nodes_tot = 0;
     for moveto in legal_moves {
-        
+        if moveto == 0 { break; }
         let mut game1 = game;
         let moves = convert_custum_move2(moveto);
         if game.white_to_play {
@@ -52,14 +50,14 @@ pub fn perft_divide(_game : Game, _depth : i8) {
     println!("{nb_nodes_tot}");
     //println!("Nodes searched: {nb_nodes_tot}");
 }
-
+/*
 pub fn _perft_hash(mut game: Game, depth : i8, tt : &mut TranspositionTable) -> usize {
     let mut nb_nodes = 0;
     
-    let legal_moves = get_legal_moves_fast(&mut game);
+    let (legal_moves, i) = get_legal_moves_fast(&mut game);
     
-    if depth == 1 || legal_moves.is_empty() {
-        return legal_moves.len();
+    if depth == 1 || i == 0 {
+        return i;
     }
     if depth == 0 {
         return 1;
@@ -84,4 +82,5 @@ pub fn _perft_hash(mut game: Game, depth : i8, tt : &mut TranspositionTable) -> 
         nb_nodes += _perft_hash(game1, depth-1, tt);
     }
     nb_nodes
-}*/
+}
+*/
