@@ -489,7 +489,6 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
     }
     let mut copy_wr = game.wr | game.wq;
     while copy_wr != 0 {
-        
         let attack = hv_moves(copy_wr.tzcnt(), occupied);
         if attack & k != 0 {
             if checked_mask != full {
@@ -509,8 +508,7 @@ pub fn get_checked_mask_b(game : &Game) -> u64 {
             checked_mask &= REC_TABLE[copy_wq.tzcnt()  as usize][k.tzcnt()  as usize] | (1<<copy_wq.tzcnt())
         }
         copy_wq = copy_wq.blsr();
-    }*/   
-
+    }*/
     checked_mask
 }
 pub fn get_checked_mask_w(game : &Game) -> u64 {
