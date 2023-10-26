@@ -26,7 +26,5 @@ inherits = "release"
 lto = true
 strip=false
 
-
-
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-    tikv-jemallocator = "0.5"
+#[target.'cfg(not(target_env = "msvc"))'.dependencies]
+#    tikv-jemallocator = "0.5"
