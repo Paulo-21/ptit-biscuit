@@ -248,7 +248,7 @@ pub fn get_bitboard_from_fen(fen : Vec<&str>) -> Game {
 fn get_bitboard_from_startpos(command : Vec<&str>) -> Game {
     let move_tab = command.iter().skip(3);
     let mut game = get_game_from_basicpos();
-    if move_tab.len() <= 0 {
+    if move_tab.len() == 0 {
         return game;
     }
     for one_move in move_tab {

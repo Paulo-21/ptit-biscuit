@@ -348,14 +348,14 @@ pub fn sort_move(moves : &mut [u64;MAX_CAPTURE], mut score : [u64;MAX_CAPTURE]) 
     for i in 1..score.len() {
         let mut j = i;
         while j > 0 && score[j] > score[j - 1] {
-            //score.swap(j, j-1);
-            //moves.swap(j, j-1);
-            let temp = score[j];
+            score.swap(j, j-1);
+            moves.swap(j, j-1);
+            /*let temp = score[j];
             score[j] = score[j-1];
             score[j-1] = temp;
             let temp = moves[j];
             moves[j] = moves[j-1];
-            moves[j-1] = temp;
+            moves[j-1] = temp;*/
             j -= 1;
         }
     }
