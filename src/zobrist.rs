@@ -1,12 +1,12 @@
 use crate::chess::Game;
+use bitintr::Tzcnt;
 use lazy_static::lazy_static;
+use rand::{Rng, SeedableRng};
 use rand_xorshift::XorShiftRng;
-use rand::{RngCore,  SeedableRng};
-use bitintr::{ Tzcnt };
 
 const SEED: [u8; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 lazy_static! {
-    pub static ref PIECE_SQUARE : [[u64; 64]; 12] = {
+    pub static ref PIECE_SQUARE: [[u64; 64]; 12] = {
         let mut piece_square = [[0u64; 64]; 12];
         let mut rng = XorShiftRng::from_seed(SEED);
         for i in 0..12 {
@@ -16,10 +16,9 @@ lazy_static! {
         }
         piece_square
     };
-
-    pub static ref CASTLING_RIGHT : [u64;4] = {
+    pub static ref CASTLING_RIGHT: [u64; 4] = {
         let mut piece_square = [[0u64; 64]; 12];
-        let mut castling_right = [0u64;4];
+        let mut castling_right = [0u64; 4];
         let mut rng = XorShiftRng::from_seed(SEED);
         for i in 0..12 {
             for k in 0..64 {
@@ -31,10 +30,9 @@ lazy_static! {
         }
         castling_right
     };
-    
-    pub static ref VALID_ENPASSANT : [u64; 8] = {
+    pub static ref VALID_ENPASSANT: [u64; 8] = {
         let mut rng = XorShiftRng::from_seed(SEED);
-        let mut castling_right = [0u64;4];
+        let mut castling_right = [0u64; 4];
         let mut piece_square = [[0u64; 64]; 12];
         let mut valid_enpassant = [0u64; 8];
         for i in 0..12 {
@@ -50,12 +48,12 @@ lazy_static! {
         }
         valid_enpassant
     };
-    pub static ref  SIDETOMOVE : u64 = {
+    pub static ref SIDETOMOVE: u64 = {
         let mut rng = XorShiftRng::from_seed(SEED);
-        let mut castling_right = [0u64;4];
+        let mut castling_right = [0u64; 4];
         let mut piece_square = [[0u64; 64]; 12];
         let mut valid_enpassant = [0u64; 8];
-        
+
         for i in 0..12 {
             for k in 0..64 {
                 piece_square[i][k] = rng.next_u64();
@@ -73,24 +71,32 @@ lazy_static! {
 
 impl Game {
     pub fn as_array(&self) -> [u64; 12] {
-        [self.wp, self.wn, self.wb, self.wr, self.wq, self.wk, self.bp, self.bn, self.bb, self.br, self.bq, self.bk]
+        [
+            self.wp, self.wn, self.wb, self.wr, self.wq, self.wk, self.bp, self.bn, self.bb,
+            self.br, self.bq, self.bk,
+        ]
     }
     pub fn castling_as_array(&self) -> [bool; 4] {
-        [self.wqueen_castle, self.wking_castle, self.bqueen_castle, self.bking_castle]
+        [
+            self.wqueen_castle,
+            self.wking_castle,
+            self.bqueen_castle,
+            self.bking_castle,
+        ]
     }
 }
-pub fn init_zobrist_key(game : &Game
-    /*,piece_square : &mut [[u64;64]; 12], sidetomoveb: &mut u64, castling_right:&mut [u64;4],
-    valid_enpassant : &mut [u64; 8],*/
+pub fn init_zobrist_key(
+    game: &Game, /*,piece_square : &mut [[u64;64]; 12], sidetomoveb: &mut u64, castling_right:&mut [u64;4],
+                 valid_enpassant : &mut [u64; 8],*/
 ) -> u64 {
     let mut zobrist_key = 0u64;
     let mut i = 0;
     for mut piece in game.as_array() {
         while piece != 0 {
             zobrist_key ^= PIECE_SQUARE[i][piece.tzcnt() as usize];
-            piece &= piece-1;
+            piece &= piece - 1;
         }
-        i+=1;
+        i += 1;
     }
     i = 0;
     for right in game.castling_as_array() {

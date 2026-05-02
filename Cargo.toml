@@ -9,12 +9,12 @@ edition = "2024"
 lazy_static = "1.5.0"
 #minstant = "0.1.2"
 bitintr = "0.3.0"
-rand_xorshift = "0.4.0"
-rand = "0.9"
+rand_xorshift = "0.5.0"
+rand = "0.10"
 
 [profile.release]
 lto = true
-codegen-units = 1
+#codegen-units = 1
 strip=true
 panic = 'abort'
 
