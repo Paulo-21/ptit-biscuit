@@ -121,13 +121,22 @@ pub fn convert_square_to_move(a_move: u64) -> String {
     a.push((48 + b + 1) as char);
     a
 }
-pub static MVV_LVA: [[u64; 6]; 6] = [
+pub static MVV_LVA1: [[u16; 6]; 6] = [
     [105, 205, 305, 405, 505, 605],
     [104, 204, 304, 404, 504, 604],
     [103, 203, 303, 403, 503, 603],
     [102, 202, 302, 402, 502, 602],
     [101, 201, 301, 401, 501, 601],
     [100, 200, 300, 400, 500, 600],
+];
+
+pub static MVV_LVA: [[u16; 6]; 6] = [
+    [500, 400, 300, 200, 100, 0],
+    [501, 401, 301, 201, 101, 1],
+    [502, 402, 302, 202, 102, 2],
+    [503, 403, 303, 203, 103, 3],
+    [504, 404, 304, 204, 104, 4],
+    [505, 405, 305, 205, 105, 5],
 ];
 pub static RANK_MASK: [u64; 8] = [
     0x00000000000000FF,
@@ -496,28 +505,22 @@ pub fn convert_string_to_bitboard(binary: usize) -> u64 {
     1 << binary
 }
 #[inline(always)]
-pub fn get_score_move(attacker: usize, victim: usize) -> u64 {
+pub fn get_score_move(attacker: usize, victim: usize) -> u16 {
     //print!("{} {} , ", attacker, victim);
     MVV_LVA[attacker - 1][victim - 1]
 }
 
 //pub fn sort_move(moves : &mut [u64], mut score : Vec<u64>) {
-pub fn sort_move(moves: &mut [u64; MAX_CAPTURE], mut score: [u64; MAX_CAPTURE]) {
-    for i in 1..score.len() {
+/*pub fn sort_move(moves: &mut [u64; MAX_CAPTURE], mut score: [u16; MAX_CAPTURE]) {
+    for i in score.len()..1 {
         let mut j = i;
         while j > 0 && score[j] > score[j - 1] {
             score.swap(j, j - 1);
             moves.swap(j, j - 1);
-            /*let temp = score[j];
-            score[j] = score[j-1];
-            score[j-1] = temp;
-            let temp = moves[j];
-            moves[j] = moves[j-1];
-            moves[j-1] = temp;*/
             j -= 1;
         }
     }
-}
+}*/
 pub fn _get_pinned_b(game: &Game) -> u64 {
     let occupied_bb = game.occupied();
     let own_pieces = game.black();
@@ -1064,9 +1067,8 @@ pub fn get_legal_moves_fast(game: &mut Game) -> ([u64; 70], usize) {
 pub fn get_legal_moves_fast_c(
     game: &mut Game,
 ) -> (
-    [u64; MAX_CAPTURE],
+    [(u16, u64); MAX_CAPTURE],
     [u64; MAX_QUIET_MOVE],
-    [u64; MAX_CAPTURE],
     usize,
     usize,
 ) {
@@ -1074,8 +1076,10 @@ pub fn get_legal_moves_fast_c(
     /*let mut capture = Vec::with_capacity(10);
     let mut score = Vec::with_capacity(10);
     let mut legal_moves = Vec::with_capacity(30);*/
-    let mut capture = [0u64; MAX_CAPTURE];
-    let mut score = [0u64; MAX_CAPTURE];
+    //let mut capture = [0u64; MAX_CAPTURE];
+    //let mut score = [0u64; MAX_CAPTURE];
+    let mut score_capture = [(0u16, 0u64); MAX_CAPTURE];
+
     let mut legal_moves = [0u64; MAX_QUIET_MOVE];
     let mut c_i = 0;
     let mut q_i = 0;
@@ -1087,8 +1091,241 @@ pub fn get_legal_moves_fast_c(
         //WHITE
         let checkmask = get_checked_mask_w(game);
         let (pin_hv, pin_d12) = get_pinned_mask_w(game);
-        game.en_passant &= !RANK_MASK[2];
+        //QUEEN
+        let mut p = game.wq & !(pin_hv | pin_d12);
+        let mut p1 = game.wq & pin_hv;
+        let mut p2 = game.wq & pin_d12;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = (hv_moves(p_tzcnt, occupied) | diag_antid_moves(p_tzcnt, occupied))
+                & !white
+                & checkmask;
+
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(5, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = hv_moves(p1_tzcnt, occupied) & !white & checkmask & pin_hv;
+
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(6, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(5, victim as usize);
+                    //capture[c_i] = (p1_tzcnt << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        while p2 != 0 {
+            let p2_tzcnt = p2.tzcnt();
+            let mut att = diag_antid_moves(p2_tzcnt, occupied) & !white & checkmask & pin_d12;
+
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(5, victim as usize),
+                        (p2_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(5, victim as usize);
+                    //capture[c_i] = (p2.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p2_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p2 = p2.blsr();
+        }
+        //ROOK
+        let mut p = game.wr & !(pin_hv | pin_d12);
+        let mut p1 = game.wr & pin_hv;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = hv_moves(p_tzcnt, occupied) & !white & checkmask;
+
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(4, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = hv_moves(p1_tzcnt, occupied) & !white & checkmask & pin_hv;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(4, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //BISHOP
+        let mut p = game.wb & !(pin_hv | pin_d12);
+        let mut p1 = game.wb & pin_d12;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = diag_antid_moves(p_tzcnt, occupied) & !white & checkmask;
+
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(3, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = diag_antid_moves(p1_tzcnt, occupied) & !white & checkmask & pin_d12;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(3, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //KNIGHT
+        let mut copy = game.wn & !(pin_hv | pin_d12);
+        while copy != 0 {
+            let copy_tzcnt = copy.tzcnt();
+            let mut att = KNIGHT_MOVE[copy_tzcnt as usize] & !white & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & black != 0 {
+                    let victim = ((piece & game.bp) != 0) as u64
+                        + (piece & game.bn != 0) as u64 * 2
+                        + (piece & game.bb != 0) as u64 * 3
+                        + (piece & game.br != 0) as u64 * 4
+                        + (piece & game.bq != 0) as u64 * 5
+                        + (piece & game.bk != 0) as u64 * 6;
+
+                    score_capture[c_i] = (
+                        get_score_move(2, victim as usize),
+                        (copy_tzcnt << 9) + (b << 1),
+                    );
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (copy_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            copy = copy.blsr();
+        }
         //PAWN
+        game.en_passant &= !RANK_MASK[2];
         let unpinned_wp = game.wp & !pin_hv & !pin_d12;
         let mut p_at =
             (unpinned_wp & !FILE_MASKS[0]) & ((black | game.en_passant) >> 7) & (checkmask >> 7)
@@ -1117,11 +1354,16 @@ pub fn get_legal_moves_fast_c(
                 + (piece & game.br != 0) as u64 * 4
                 + (piece & game.bq != 0) as u64 * 5
                 + (piece & game.bk != 0) as u64 * 6;
-
-            score[c_i] = get_score_move(1, victim as usize);
-            capture[c_i] = (pi_square << 9)
-                | ((pi_square + 7) << 1)
-                | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64;
+            score_capture[c_i] = (
+                get_score_move(1, victim as usize),
+                (pi_square << 9)
+                    | ((pi_square + 7) << 1)
+                    | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64,
+            );
+            //score[c_i] = get_score_move(1, victim as usize);
+            /*capture[c_i] = (pi_square << 9)
+            | ((pi_square + 7) << 1)
+            | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64;*/
             c_i += 1;
             p_at = p_at.blsr();
         }
@@ -1134,10 +1376,16 @@ pub fn get_legal_moves_fast_c(
                 + (piece & game.br != 0) as u64 * 4
                 + (piece & game.bq != 0) as u64 * 5
                 + (piece & game.bk != 0) as u64 * 6;
-            score[c_i] = get_score_move(1, victim as usize);
+            score_capture[c_i] = (
+                get_score_move(1, victim as usize),
+                (pi_square << 9)
+                    | ((pi_square + 9) << 1)
+                    | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64,
+            );
+            /*score[c_i] = get_score_move(1, victim as usize);
             capture[c_i] = (pi_square << 9)
                 | ((pi_square + 9) << 1)
-                | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64;
+                | (((1 << pi_square) & RANK_MASK[6]) != 0) as u64;*/
             p_at2 = p_at2.blsr();
             c_i += 1;
         }
@@ -1158,218 +1406,10 @@ pub fn get_legal_moves_fast_c(
             q_i += 1;
         }
 
-        //KNIGHT
-        let mut copy = game.wn & !(pin_hv | pin_d12);
-        while copy != 0 {
-            let mut att = KNIGHT_MOVE[copy.tzcnt() as usize] & !white & checkmask;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-
-                    score[c_i] = get_score_move(2, victim as usize);
-                    capture[c_i] = (copy.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (copy.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            copy = copy.blsr();
-        }
-        //BISHOP
-        let mut p = game.wb & !(pin_hv | pin_d12);
-        let mut p1 = game.wb & pin_d12;
-        while p != 0 {
-            let p_tzcnt = p.tzcnt();
-            let mut att = diag_antid_moves(p_tzcnt, occupied) & !white & checkmask;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(3, victim as usize);
-                    capture[c_i] = (p_tzcnt << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let p1_tzcnt = p1.tzcnt();
-            let mut att = diag_antid_moves(p1_tzcnt, occupied) & !white & checkmask & pin_d12;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(3, victim as usize);
-                    capture[c_i] = (p1_tzcnt << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        //ROOK
-        let mut p = game.wr & !(pin_hv | pin_d12);
-        let mut p1 = game.wr & pin_hv;
-        while p != 0 {
-            let mut att = hv_moves(p.tzcnt(), occupied) & !white & checkmask;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(4, victim as usize);
-                    capture[c_i] = (p.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let mut att = hv_moves(p1.tzcnt(), occupied) & !white & checkmask & pin_hv;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(4, victim as usize);
-                    capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        //QUEEN
-        let mut p = game.wq & !(pin_hv | pin_d12);
-        let mut p1 = game.wq & pin_hv;
-        let mut p2 = game.wq & pin_d12;
-        while p != 0 {
-            let p_tzcnt = p.tzcnt();
-            let mut att = (hv_moves(p_tzcnt, occupied) | diag_antid_moves(p_tzcnt, occupied))
-                & !white
-                & checkmask;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p_tzcnt << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let p1_tzcnt = p1.tzcnt();
-            let mut att = hv_moves(p1_tzcnt, occupied) & !white & checkmask & pin_hv;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p1_tzcnt << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        while p2 != 0 {
-            let mut att = diag_antid_moves(p2.tzcnt(), occupied) & !white & checkmask & pin_d12;
-
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & black != 0 {
-                    let victim = ((piece & game.bp) != 0) as u64
-                        + (piece & game.bn != 0) as u64 * 2
-                        + (piece & game.bb != 0) as u64 * 3
-                        + (piece & game.br != 0) as u64 * 4
-                        + (piece & game.bq != 0) as u64 * 5
-                        + (piece & game.bk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p2.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p2.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p2 = p2.blsr();
-        }
         //KING
         let attack_b = attack_b(game);
-        let mut p = KING_MOVE[game.wk.tzcnt() as usize] & !attack_b & !white; // & !pin_hv & !pin_d12;
+        let wk_tzcnt = game.wk.tzcnt();
+        let mut p = KING_MOVE[wk_tzcnt as usize] & !attack_b & !white; // & !pin_hv & !pin_d12;
 
         while p != 0 {
             let b = p.tzcnt();
@@ -1381,11 +1421,15 @@ pub fn get_legal_moves_fast_c(
                     + (piece & game.br != 0) as u64 * 4
                     + (piece & game.bq != 0) as u64 * 5
                     + (piece & game.bk != 0) as u64 * 6;
-                score[c_i] = get_score_move(6, victim as usize);
-                capture[c_i] = (game.wk.tzcnt() << 9) + (p.tzcnt() << 1);
+                score_capture[c_i] = (
+                    get_score_move(6, victim as usize),
+                    (wk_tzcnt << 9) + (p.tzcnt() << 1),
+                );
+                //score[c_i] = get_score_move(6, victim as usize);
+                //capture[c_i] = (game.wk.tzcnt() << 9) + (p.tzcnt() << 1);
                 c_i += 1;
             } else {
-                legal_moves[q_i] = (game.wk.tzcnt() << 9) + (p.tzcnt() << 1);
+                legal_moves[q_i] = (wk_tzcnt << 9) + (p.tzcnt() << 1);
                 q_i += 1;
             }
             p = p.blsr();
@@ -1408,8 +1452,248 @@ pub fn get_legal_moves_fast_c(
         //BLACK
         let checkmask = get_checked_mask_b(game);
         let (pin_hv, pin_d12) = get_pinned_mask_b(game);
-        game.en_passant &= !RANK_MASK[5];
+
+        //QUEEN
+        let mut p = game.bq & !(pin_hv | pin_d12);
+        let mut p1 = game.bq & pin_hv;
+        let mut p2 = game.bq & pin_d12;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = (hv_moves(p_tzcnt, occupied) | diag_antid_moves(p.tzcnt(), occupied))
+                & !black
+                & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(5, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(5, victim as usize);
+                    //capture[c_i] = (p.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = hv_moves(p1_tzcnt, occupied) & checkmask & pin_hv & !black;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(5, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(5, victim as usize);
+                    //capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        while p2 != 0 {
+            let p2_tzcnt = p2.tzcnt();
+            let mut att = diag_antid_moves(p2_tzcnt, occupied) & checkmask & pin_d12 & !black;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(5, victim as usize),
+                        (p2_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(5, victim as usize);
+                    //capture[c_i] = (p2.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p2_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p2 = p2.blsr();
+        }
+        //ROOK
+        let mut p = game.br & !(pin_hv | pin_d12);
+        let mut p1 = game.br & pin_hv;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = hv_moves(p_tzcnt, occupied) & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(4, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(4, victim as usize);
+                    //capture[c_i] = (p.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = hv_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_hv;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(4, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(4, victim as usize);
+                    //capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1.tzcnt() << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+        //BISHOP
+        let mut p = game.bb & !(pin_hv | pin_d12);
+        let mut p1 = game.bb & pin_d12;
+        while p != 0 {
+            let p_tzcnt = p.tzcnt();
+            let mut att = diag_antid_moves(p_tzcnt, occupied) & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(3, victim as usize),
+                        (p_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(3, victim as usize);
+                    //capture[c_i] = (p.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p = p.blsr();
+        }
+        while p1 != 0 {
+            let p1_tzcnt = p1.tzcnt();
+            let mut att = diag_antid_moves(p1_tzcnt, occupied) & !black & checkmask & pin_d12;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(3, victim as usize),
+                        (p1_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(3, victim as usize);
+                    //capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (p1_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            p1 = p1.blsr();
+        }
+
+        //KNIGHT
+        let mut copy = game.bn & !(pin_hv | pin_d12);
+        while copy != 0 {
+            let copy_tzcnt = copy.tzcnt();
+            let mut att = KNIGHT_MOVE[copy_tzcnt as usize] & !black & checkmask;
+            while att != 0 {
+                let b = att.tzcnt();
+                let piece = 1 << b;
+                if 1 << b & white != 0 {
+                    let victim = ((piece & game.wp) != 0) as u64
+                        + (piece & game.wn != 0) as u64 * 2
+                        + (piece & game.wb != 0) as u64 * 3
+                        + (piece & game.wr != 0) as u64 * 4
+                        + (piece & game.wq != 0) as u64 * 5
+                        + (piece & game.wk != 0) as u64 * 6;
+                    score_capture[c_i] = (
+                        get_score_move(2, victim as usize),
+                        (copy_tzcnt << 9) + (b << 1),
+                    );
+                    //score[c_i] = get_score_move(2, victim as usize);
+                    //capture[c_i] = (copy.tzcnt() << 9) + (b << 1);
+                    c_i += 1;
+                } else {
+                    legal_moves[q_i] = (copy_tzcnt << 9) + (b << 1);
+                    q_i += 1;
+                }
+                att = att.blsr();
+            }
+            copy = copy.blsr();
+        }
         //PAWN
+        game.en_passant &= !RANK_MASK[5];
         let unpinned_bp = game.bp & !pin_hv & !pin_d12;
         let mut p_at =
             (unpinned_bp & !FILE_MASKS[7]) & ((white | game.en_passant) << 7) & (checkmask << 7)
@@ -1437,9 +1721,13 @@ pub fn get_legal_moves_fast_c(
                 + (piece & game.wr != 0) as u64 * 4
                 + (piece & game.wq != 0) as u64 * 5
                 + (piece & game.wk != 0) as u64 * 6;
-            score[c_i] = get_score_move(1, victim as usize);
-            capture[c_i] = (pi_square << 9) + ((pi_square - 7) << 1)
-                | (((1 << pi_square) & RANK_MASK[1]) != 0) as u64;
+            score_capture[c_i] = (
+                get_score_move(1, victim as usize),
+                (pi_square << 9) + ((pi_square - 7) << 1)
+                    | (((1 << pi_square) & RANK_MASK[1]) != 0) as u64,
+            );
+            //score[c_i] = get_score_move(1, victim as usize);
+            /*capture[c_i] = (pi_square << 9) + ((pi_square - 7) << 1)| (((1 << pi_square) & RANK_MASK[1]) != 0) as u64;*/
             p_at = p_at.blsr();
             c_i += 1;
         }
@@ -1452,9 +1740,14 @@ pub fn get_legal_moves_fast_c(
                 + (piece & game.wr != 0) as u64 * 4
                 + (piece & game.wq != 0) as u64 * 5
                 + (piece & game.wk != 0) as u64 * 6;
-            score[c_i] = get_score_move(1, victim as usize);
-            capture[c_i] = (pi_square << 9) + ((pi_square - 9) << 1)
-                | (((1 << pi_square) & RANK_MASK[1]) != 0) as u64;
+            score_capture[c_i] = (
+                get_score_move(1, victim as usize),
+                (pi_square << 9) + ((pi_square - 9) << 1)
+                    | (((1 << pi_square) & RANK_MASK[1]) != 0) as u64,
+            );
+            //score[c_i] = get_score_move(1, victim as usize);
+            /*capture[c_i] = (pi_square << 9) + ((pi_square - 9) << 1)
+            | (((1 << pi_square) & RANK_MASK[1]) != 0) as u64;*/
             p_at2 = p_at2.blsr();
             c_i += 1;
         }
@@ -1473,208 +1766,10 @@ pub fn get_legal_moves_fast_c(
             q_i += 1;
         }
 
-        //KNIGHT
-        let mut copy = game.bn & !(pin_hv | pin_d12);
-        while copy != 0 {
-            let mut att = KNIGHT_MOVE[copy.tzcnt() as usize] & !black & checkmask;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(2, victim as usize);
-                    capture[c_i] = (copy.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (copy.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            copy = copy.blsr();
-        }
-
-        //BISHOP
-        let mut p = game.bb & !(pin_hv | pin_d12);
-        let mut p1 = game.bb & pin_d12;
-        while p != 0 {
-            let mut att = diag_antid_moves(p.tzcnt(), occupied) & !black & checkmask;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(3, victim as usize);
-                    capture[c_i] = (p.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let mut att = diag_antid_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_d12;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(3, victim as usize);
-                    capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        //ROOK
-        let mut p = game.br & !(pin_hv | pin_d12);
-        let mut p1 = game.br & pin_hv;
-        while p != 0 {
-            let mut att = hv_moves(p.tzcnt(), occupied) & !black & checkmask;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(4, victim as usize);
-                    capture[c_i] = (p.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let mut att = hv_moves(p1.tzcnt(), occupied) & !black & checkmask & pin_hv;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(4, victim as usize);
-                    capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        //QUEEN
-        let mut p = game.bq & !(pin_hv | pin_d12);
-        let mut p1 = game.bq & pin_hv;
-        let mut p2 = game.bq & pin_d12;
-        while p != 0 {
-            let mut att = (hv_moves(p.tzcnt(), occupied) | diag_antid_moves(p.tzcnt(), occupied))
-                & !black
-                & checkmask;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p = p.blsr();
-        }
-        while p1 != 0 {
-            let mut att = hv_moves(p1.tzcnt(), occupied) & checkmask & pin_hv & !black;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p1.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p1.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p1 = p1.blsr();
-        }
-        while p2 != 0 {
-            let mut att = diag_antid_moves(p2.tzcnt(), occupied) & checkmask & pin_d12 & !black;
-            while att != 0 {
-                let b = att.tzcnt();
-                let piece = 1 << b;
-                if 1 << b & white != 0 {
-                    let victim = ((piece & game.wp) != 0) as u64
-                        + (piece & game.wn != 0) as u64 * 2
-                        + (piece & game.wb != 0) as u64 * 3
-                        + (piece & game.wr != 0) as u64 * 4
-                        + (piece & game.wq != 0) as u64 * 5
-                        + (piece & game.wk != 0) as u64 * 6;
-                    score[c_i] = get_score_move(5, victim as usize);
-                    capture[c_i] = (p2.tzcnt() << 9) + (b << 1);
-                    c_i += 1;
-                } else {
-                    legal_moves[q_i] = (p2.tzcnt() << 9) + (b << 1);
-                    q_i += 1;
-                }
-                att = att.blsr();
-            }
-            p2 = p2.blsr();
-        }
         //KING
         let attack_w = attack_w(game);
-        let mut p = KING_MOVE[game.bk.tzcnt() as usize] & !attack_w & !black;
+        let bk_tzcnt = game.bk.tzcnt();
+        let mut p = KING_MOVE[bk_tzcnt as usize] & !attack_w & !black;
         while p != 0 {
             let b = p.tzcnt();
             let piece = 1 << b;
@@ -1685,11 +1780,15 @@ pub fn get_legal_moves_fast_c(
                     + (piece & game.wr != 0) as u64 * 4
                     + (piece & game.wq != 0) as u64 * 5
                     + (piece & game.wk != 0) as u64 * 6;
-                score[c_i] = get_score_move(6, victim as usize);
-                capture[c_i] = (game.bk.tzcnt() << 9) + (b << 1);
+                score_capture[c_i] = (
+                    get_score_move(1, victim as usize),
+                    (bk_tzcnt << 9) + (b << 1),
+                );
+                //score[c_i] = get_score_move(6, victim as usize);
+                //capture[c_i] = (game.bk.tzcnt() << 9) + (b << 1);
                 c_i += 1;
             } else {
-                legal_moves[q_i] = (game.bk.tzcnt() << 9) + (b << 1);
+                legal_moves[q_i] = (bk_tzcnt << 9) + (b << 1);
                 q_i += 1;
             }
             p = p.blsr();
@@ -1709,7 +1808,7 @@ pub fn get_legal_moves_fast_c(
             q_i += 1;
         }
     }
-    (capture, legal_moves, score, c_i, q_i)
+    (score_capture, legal_moves, c_i, q_i)
 }
 
 fn xray_rook_attacks(occ: u64, mut blockers: u64, rook_sq: u64) -> u64 {
