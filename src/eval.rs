@@ -22,8 +22,8 @@ pub fn eval(game: &Game, nmoves: i32) -> i32 {
 
     }*/
     score += pesto_eval(game);
-    score += double_pawn(game);
-    score += bishop_pair(game);
+    //score += double_pawn(game);
+    //score += bishop_pair(game);
     score
 }
 #[inline]
@@ -63,92 +63,105 @@ fn pesto_eval(game: &Game) -> i32 {
     let mut eg_score = 0;
     /*PAWN  */
     let mut n = game.wp;
-    while n != 0 {
-        mg_score += MG_VALUE[0] + MG_PAWN_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[0] + EG_PAWN_TABLE[flip(n.tzcnt()) as usize];
-        n = n.blsr();
-    }
-    n = game.bp;
-    while n != 0 {
-        mg_score -= MG_VALUE[0] + MG_PAWN_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_VALUE[0] + EG_PAWN_TABLE[n.tzcnt() as usize];
-        n = n.blsr();
-    }
+    unsafe {
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_VALUE[0] + MG_PAWN_TABLE.get_unchecked(ftz);
+            eg_score += EG_VALUE[0] + EG_PAWN_TABLE.get_unchecked(ftz);
+            n = n.blsr();
+        }
+        n = game.bp;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_VALUE[0] + MG_PAWN_TABLE.get_unchecked(ntz);
+            eg_score -= EG_VALUE[0] + EG_PAWN_TABLE.get_unchecked(ntz);
+            n = n.blsr();
+        }
 
-    /*KNIGHT */
-    n = game.wn;
-    while n != 0 {
-        mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE[flip(n.tzcnt()) as usize];
-        game_phase += 1;
-        n = n.blsr();
+        /*KNIGHT */
+        n = game.wn;
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_VALUE[1] + MG_KNIGHT_TABLE.get_unchecked(ftz);
+            eg_score += EG_VALUE[1] + EG_KNIGHT_TABLE.get_unchecked(ftz);
+            game_phase += 1;
+            n = n.blsr();
+        }
+        n = game.bn;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_VALUE[1] + MG_KNIGHT_TABLE.get_unchecked(ntz);
+            eg_score -= EG_VALUE[1] + EG_KNIGHT_TABLE.get_unchecked(ntz);
+            game_phase += 1;
+            n = n.blsr();
+        }
+        /*Bishop */
+        n = game.wb;
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_VALUE[2] + MG_BISHOP_TABLE.get_unchecked(ftz);
+            eg_score += EG_VALUE[2] + EG_BISHOP_TABLE.get_unchecked(ftz);
+            game_phase += 1;
+            n = n.blsr();
+        }
+        n = game.bb;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_VALUE[2] + MG_BISHOP_TABLE.get_unchecked(ntz);
+            eg_score -= EG_VALUE[2] + EG_BISHOP_TABLE.get_unchecked(ntz);
+            game_phase += 1;
+            n = n.blsr();
+        }
+        /*Rook */
+        n = game.wr;
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_VALUE[3] + MG_ROOK_TABLE.get_unchecked(ftz);
+            eg_score += EG_VALUE[3] + EG_ROOK_TABLE.get_unchecked(ftz);
+            game_phase += 2;
+            n = n.blsr();
+        }
+        n = game.br;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_VALUE[3] + MG_ROOK_TABLE.get_unchecked(ntz);
+            eg_score -= EG_VALUE[3] + EG_ROOK_TABLE.get_unchecked(ntz);
+            game_phase += 2;
+            n = n.blsr();
+        }
+        /*Queen */
+        n = game.wq;
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_VALUE[4] + MG_QUEEN_TABLE.get_unchecked(ftz);
+            eg_score += EG_VALUE[4] + EG_QUEEN_TABLE.get_unchecked(ftz);
+            game_phase += 4;
+            n = n.blsr();
+        }
+        n = game.bq;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_VALUE[4] + MG_QUEEN_TABLE.get_unchecked(ntz);
+            eg_score -= EG_VALUE[4] + EG_QUEEN_TABLE.get_unchecked(ntz);
+            game_phase += 4;
+            n = n.blsr();
+        }
+        /*King */
+        n = game.wk;
+        while n != 0 {
+            let ftz = flip(n.tzcnt()) as usize;
+            mg_score += MG_KING_TABLE.get_unchecked(ftz);
+            eg_score += EG_KING_TABLE.get_unchecked(ftz);
+            n = n.blsr();
+        }
+        n = game.bk;
+        while n != 0 {
+            let ntz = n.tzcnt() as usize;
+            mg_score -= MG_KING_TABLE.get_unchecked(ntz);
+            eg_score -= EG_KING_TABLE.get_unchecked(ntz);
+            n = n.blsr();
+        }
     }
-    n = game.bn;
-    while n != 0 {
-        mg_score -= MG_VALUE[1] + MG_KNIGHT_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_VALUE[1] + EG_KNIGHT_TABLE[n.tzcnt() as usize];
-        game_phase += 1;
-        n = n.blsr();
-    }
-    /*Bishop */
-    n = game.wb;
-    while n != 0 {
-        mg_score += MG_VALUE[2] + MG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[2] + EG_BISHOP_TABLE[flip(n.tzcnt()) as usize];
-        game_phase += 1;
-        n = n.blsr();
-    }
-    n = game.bb;
-    while n != 0 {
-        mg_score -= MG_VALUE[2] + MG_BISHOP_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_VALUE[2] + EG_BISHOP_TABLE[n.tzcnt() as usize];
-        game_phase += 1;
-        n = n.blsr();
-    }
-    /*Rook */
-    n = game.wr;
-    while n != 0 {
-        mg_score += MG_VALUE[3] + MG_ROOK_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[3] + EG_ROOK_TABLE[flip(n.tzcnt()) as usize];
-        game_phase += 2;
-        n = n.blsr();
-    }
-    n = game.br;
-    while n != 0 {
-        mg_score -= MG_VALUE[3] + MG_ROOK_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_VALUE[3] + EG_ROOK_TABLE[n.tzcnt() as usize];
-        game_phase += 2;
-        n = n.blsr();
-    }
-    /*Queen */
-    n = game.wq;
-    while n != 0 {
-        mg_score += MG_VALUE[4] + MG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_VALUE[4] + EG_QUEEN_TABLE[flip(n.tzcnt()) as usize];
-        game_phase += 4;
-        n = n.blsr();
-    }
-    n = game.bq;
-    while n != 0 {
-        mg_score -= MG_VALUE[4] + MG_QUEEN_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_VALUE[4] + EG_QUEEN_TABLE[n.tzcnt() as usize];
-        game_phase += 4;
-        n = n.blsr();
-    }
-    /*King */
-    n = game.wk;
-    while n != 0 {
-        mg_score += MG_KING_TABLE[flip(n.tzcnt()) as usize];
-        eg_score += EG_KING_TABLE[flip(n.tzcnt()) as usize];
-        n = n.blsr();
-    }
-    n = game.bk;
-    while n != 0 {
-        mg_score -= MG_KING_TABLE[n.tzcnt() as usize];
-        eg_score -= EG_KING_TABLE[n.tzcnt() as usize];
-        n = n.blsr();
-    }
-
     if game_phase > 24 {
         game_phase = 24
     };
@@ -260,7 +273,6 @@ pub fn _flip_vertical(x: u64) -> u64 {
 }
 #[inline(always)]
 pub fn flip(x: u64) -> u64 {
-    //x^56
     //x.swap_bytes()
     //x^63
     x ^ 56
