@@ -14,12 +14,25 @@ mod search_tools;
 mod table_transposition;
 mod uci;
 mod zobrist;
+//mod zedzeda;
 //use perft::perft_divide;
-use crate::chess::*;
+use crate::{chess::*, eval::eval};
 use std::env;
 use uci::*;
 
 fn main() {
+    //let mut game = Game::default();
+    /*let argument = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let mut arr = vec!["", ""];
+    let mut fen: Vec<&str> = argument.trim().split_ascii_whitespace().collect();
+    arr.append(&mut fen);
+    let mut game = get_bitboard_from_fen(arr);
+    println!("{:?}", game);
+    println!("{}", eval(&game, 30));
+    println!("{}", eval(&game, 30));
+    game.white_to_play = false;
+    println!("{}", eval(&game, 30));*/
+
     if env::args().len() > 1 {
         let mut depth = 64i8;
         let mut game = Game::default();

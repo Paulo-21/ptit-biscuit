@@ -693,13 +693,13 @@ pub fn alpha_beta_neg_tt_best_time_fast(
         if tt_entry.depth >= depth {
             match tt_entry.node_type {
                 NodeType::PV => return (Some(tt_entry.eval), tt_entry.bestmove),
-                NodeType::ALL => alpha = max(alpha, tt_entry.eval),
-                NodeType::CUT => {
+                NodeType::CUT => alpha = max(alpha, tt_entry.eval),
+                NodeType::ALL => {
                     beta = min(beta, tt_entry.eval);
                 }
             }
             if alpha >= beta {
-                return (Some(tt_entry.eval), tt_entry.bestmove);
+                return (Some(alpha), tt_entry.bestmove);
             }
         }
         hash_move = tt_entry.bestmove;
@@ -788,7 +788,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     }*/
     let mut i = 0;
     //sort_move(&mut capture, score_moves);
-    capture_scores.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    capture_scores.sort_by(|a, b| a.0.cmp(&b.0));
     for (_, moveto_play) in capture_scores {
         //let moveto_play = *moveto_play1;
         if moveto_play == 0 {

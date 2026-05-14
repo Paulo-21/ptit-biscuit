@@ -27,7 +27,7 @@ pub enum Piece {
     QUEEN,
     KING,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Game {
     pub wp: u64,
     pub wn: u64,
@@ -42,13 +42,13 @@ pub struct Game {
     pub bq: u64,
     pub bk: u64,
     pub en_passant: u64,
+    pub hash: u64,
+    pub nb_coups: u16,
     pub white_to_play: bool,
     pub wking_castle: bool,
     pub wqueen_castle: bool,
     pub bking_castle: bool,
     pub bqueen_castle: bool,
-    pub nb_coups: u16,
-    pub hash: u64,
 }
 impl Game {
     pub fn occupied(&self) -> u64 {
@@ -2967,11 +2967,11 @@ pub fn possibility_b(game: &Game) -> u64 {
 
 pub fn is_attacked(target_is_wking: bool, game: &Game) -> bool {
     if target_is_wking {
-        possibility_b(game) & game.wk != 0
+        (possibility_b(game) & game.wk) != 0
     } else {
-        possibility_w(game) & game.bk != 0
+        (possibility_w(game) & game.bk) != 0
     }
-}
+}x
 
 pub fn get_legal_move(side_w: bool, game: &Game) -> VecDeque<(u64, Piece)> {
     //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
