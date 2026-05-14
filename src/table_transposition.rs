@@ -7,7 +7,7 @@ pub struct TranspositionTable {
     pub stat_hint: i32,
     pub mask: usize,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum NodeType {
     PV,
     CUT,
@@ -60,12 +60,17 @@ impl TranspositionTable {
         }
     }
     pub fn set(&mut self, hash: u64, depth: u8, eval: i32, bestmove: u64, node_type: NodeType) {
-        let t = Transposition::new(hash, depth, eval, bestmove, node_type);
-        let k = hash as usize % self.table.len();
-        self.table[k] = t;
+        let idx = (hash as usize) & self.mask;
+        let entry = &mut self.table[idx];
+        /*if entry.node_type == NodeType::PV {
+            return;
+        }*/
+        // overwrite rules
+        *entry = Transposition::new(hash, depth, eval, bestmove, node_type);
+        if entry.hash == 0 || (depth >= entry.depth) {}
     }
     pub fn _set_tt(&mut self, tt: Transposition) {
-        let k = tt.hash as usize % self.table.len();
+        let k = (tt.hash as usize) & self.mask;
         //let k = tt.hash as usize & self.mask;
         unsafe {
             *self.table.get_unchecked_mut(k) = tt;
@@ -74,7 +79,7 @@ impl TranspositionTable {
     pub fn get(&mut self, hash: u64) -> &Transposition {
         //let a = &self.table[hash as usize & self.mask];
         //println!("{:#034b}", self.mask);
-        let a = unsafe { &self.table.get_unchecked(hash as usize % self.table.len()) };
+        let a = unsafe { &self.table.get_unchecked((hash as usize) & self.mask) };
         if hash == a.hash && a.bestmove != 0 {
             self.stat_hint += 1;
         }

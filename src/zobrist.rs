@@ -1,5 +1,5 @@
+use crate::bmi_features::Tzcnt;
 use crate::chess::Game;
-use bitintr::Tzcnt;
 use lazy_static::lazy_static;
 use rand::{Rng, SeedableRng};
 use rand_xorshift::XorShiftRng;

@@ -830,7 +830,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                     } else {
                         node_t = NodeType::PV;
                     }
+                    //if depth >= 3 && best_move != 0 {
                     tool.tt.set(game.hash, depth, value, best_move, node_t);
+                    //}
                     return (Some(value), best_move);
                 }
                 i += 1;

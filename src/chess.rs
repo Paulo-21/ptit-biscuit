@@ -1,5 +1,7 @@
 use crate::zobrist::*;
-use bitintr::{Blsr, Tzcnt}; //, Lzcnt, Andn};
+//use bitintr::{Blsr, Tzcnt};
+use crate::bmi_features::{Blsr, Tzcnt};
+use core::arch::x86_64::{_blsr_u64, _tzcnt_u64};
 use lazy_static::lazy_static;
 use std::collections::VecDeque;
 
@@ -747,11 +749,10 @@ pub fn get_checked_mask_w(game: &Game) -> u64 {
 
     checked_mask
 }
-
-pub fn get_legal_moves_fast(game: &mut Game) -> ([u64; 70], usize) {
+pub fn get_legal_moves_fast(game: &mut Game, legal_moves: &mut [u64; 70]) -> usize {
     //Vec<u64> {
     //let mut legal_moves = Vec::with_capacity(30);
-    let mut legal_moves = [0u64; 70];
+    //let mut legal_moves = [0u64; 70];
     let mut i = 0;
     let white = game.white();
     let black = game.black();
@@ -1062,7 +1063,7 @@ pub fn get_legal_moves_fast(game: &mut Game) -> ([u64; 70], usize) {
             i += 1;
         }
     }
-    (legal_moves, i)
+    i
 }
 pub fn get_legal_moves_fast_c(
     game: &mut Game,
@@ -1346,7 +1347,7 @@ pub fn get_legal_moves_fast_c(
 
         while p_at != 0 {
             let pi_square = p_at.tzcnt();
-            let piece = 1 << (pi_square + 7);
+            let piece = 1u64 << (pi_square + 7);
 
             let victim = ((piece & (game.bp | game.en_passant)) != 0) as u64
                 + (piece & game.bn != 0) as u64 * 2
@@ -1423,13 +1424,13 @@ pub fn get_legal_moves_fast_c(
                     + (piece & game.bk != 0) as u64 * 6;
                 score_capture[c_i] = (
                     get_score_move(6, victim as usize),
-                    (wk_tzcnt << 9) + (p.tzcnt() << 1),
+                    (wk_tzcnt << 9) + (b << 1),
                 );
                 //score[c_i] = get_score_move(6, victim as usize);
-                //capture[c_i] = (game.wk.tzcnt() << 9) + (p.tzcnt() << 1);
+                //capture[c_i] = (game.wk.tzcnt() << 9) + (b << 1);
                 c_i += 1;
             } else {
-                legal_moves[q_i] = (wk_tzcnt << 9) + (p.tzcnt() << 1);
+                legal_moves[q_i] = (wk_tzcnt << 9) + (b << 1);
                 q_i += 1;
             }
             p = p.blsr();

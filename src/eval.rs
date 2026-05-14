@@ -1,5 +1,6 @@
+use crate::bmi_features::{Blsr, Popcnt, Tzcnt};
 use crate::chess::*;
-use bitintr::{Blsr, Popcnt, Tzcnt};
+//use bitintr::{Blsr, Popcnt, Tzcnt};
 
 pub fn eval(game: &Game, nmoves: i32) -> i32 {
     if nmoves == 0 {
@@ -274,7 +275,7 @@ pub fn _flip_vertical(x: u64) -> u64 {
 #[inline(always)]
 pub fn flip(x: u64) -> u64 {
     //x.swap_bytes()
-    //x^63
+    //x ^ 63
     x ^ 56
     //_flip_vertical(x)
 }
