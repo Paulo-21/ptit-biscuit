@@ -2971,7 +2971,7 @@ pub fn is_attacked(target_is_wking: bool, game: &Game) -> bool {
     } else {
         (possibility_w(game) & game.bk) != 0
     }
-}x
+}
 
 pub fn get_legal_move(side_w: bool, game: &Game) -> VecDeque<(u64, Piece)> {
     //let (mut wp, mut wn, mut wb, mut wr, mut wq, mut wk, mut bp, mut bn, mut bb, mut br, mut bq, mut bk) = copy_bitboard(wp1, wn1, wb1, wr1, wq1, wk1, bp1, bn1, bb1, br1, bq1, bk1);
