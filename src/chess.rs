@@ -1,7 +1,6 @@
 use crate::zobrist::*;
 //use bitintr::{Blsr, Tzcnt};
 use crate::bmi_features::{Blsr, Tzcnt};
-use core::arch::x86_64::{_blsr_u64, _tzcnt_u64};
 use lazy_static::lazy_static;
 use std::collections::VecDeque;
 
