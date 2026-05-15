@@ -691,7 +691,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     let tt_entry = tool.tt.get(game.hash);
     if tt_entry.hash == game.hash {
         if tt_entry.depth >= depth {
-            match tt_entry.node_type {
+            /*match tt_entry.node_type {
                 NodeType::PV => return (Some(tt_entry.eval), tt_entry.bestmove),
                 NodeType::CUT => alpha = max(alpha, tt_entry.eval),
                 NodeType::ALL => {
@@ -700,7 +700,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             }
             if alpha >= beta {
                 return (Some(alpha), tt_entry.bestmove);
-            }
+            }*/
         }
         hash_move = tt_entry.bestmove;
     }
@@ -710,11 +710,8 @@ pub fn alpha_beta_neg_tt_best_time_fast(
 
     //if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
     if depth == 0 || (q_len == 0 && c_len == 0) {
-        let mut eval = eval(game, (q_len + c_len) as i32);
-        //eval *= -1 * !game.white_to_play as i32;
-        if !game.white_to_play {
-            eval *= -1;
-        };
+        let eval = eval(game, (q_len + c_len) as i32);
+
         return (Some(eval), 0);
     };
 
@@ -737,7 +734,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             nb_node,
             0,
         );
-        match s {
+        /*match s {
             Some(score) => {
                 if value < -score {
                     value = -score;
@@ -758,7 +755,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                 }
             }
             None => return (None, 0),
-        }
+        }*/
     }
     /*if first != 0 {
         let (a,b, prom) = convert_custum_move2(first);
@@ -906,10 +903,10 @@ pub fn mtd_f(
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
         //let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
-        let (x, i) =
+        let (mut x, i) =
             alpha_beta_neg_tt_best_time_fast(game, depth, beta - 1, beta, tool, nb_node, bmove);
         match x {
-            Some(s) => {
+            Some(mut s) => {
                 g = s;
                 bmove = i;
                 if g < beta {
