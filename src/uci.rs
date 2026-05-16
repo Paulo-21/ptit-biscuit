@@ -53,10 +53,11 @@ pub fn uci() {
                 //let fen = "position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0".trim().split_ascii_whitespace().collect();
                 //let game = get_bitboard_from_fen(fen);
 
-                let mut i = 1;
+                let mut i = 1u8;
                 loop {
                     let now = Instant::now();
-                    let nb_node = perft(game, i) as u128;
+                    let mut legal_moves_tab = vec![[0u64; 70]; i as usize + 1];
+                    let nb_node = perft(game, i, &mut legal_moves_tab) as u128;
                     let time = now.elapsed().as_millis();
                     let nps = nb_node.checked_div(time);
                     let nps_str = match nps {

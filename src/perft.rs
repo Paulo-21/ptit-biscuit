@@ -1,23 +1,33 @@
 use crate::chess::*;
 
-pub fn perft(mut game: Game, depth: i8) -> usize {
+pub fn perft(mut game: Game, depth: u8, legal_moves_tab: &mut Vec<[u64; 70]>) -> usize {
     let mut nb_nodes = 0;
-    let mut legal_moves = [0u64; 70];
-    let len = get_legal_moves_fast(&mut game, &mut legal_moves);
-    //let legal_moves = get_legal_move(game.white_to_play,&game);
+    let legal_moves: &mut [u64; 70];
+    let len = unsafe {
+        legal_moves = &mut *legal_moves_tab.get_unchecked_mut(depth as usize);
+        get_legal_moves_fast(&mut game, legal_moves)
+    };
 
-    if depth == 1 || legal_moves[0] == 0 {
-        return len;
+    //let legal_moves = get_legal_move(game.white_to_play,&game);
+    unsafe {
+        if depth == 1 || *legal_moves.get_unchecked(0) == 0 {
+            return len;
+        }
     }
     if depth == 0 {
         return 1;
     }
-    for &moveto in &legal_moves[..len] {
-        //if moveto == 0 {
-        //    break;
-        //}
-        let mut game1 = game;
+    for i in 0..70 {
+        let moveto = unsafe {
+            *legal_moves_tab
+                .get_unchecked(depth as usize)
+                .get_unchecked(i)
+        };
+        if moveto == 0 {
+            break;
+        }
         //let moves = convert_custum_move(moveto);
+        let mut game1 = game;
         let moves = convert_custum_move2(moveto);
         if game.white_to_play {
             compute_move_w_thrust(moves, &mut game1);
@@ -25,7 +35,7 @@ pub fn perft(mut game: Game, depth: i8) -> usize {
             compute_move_b_thrust(moves, &mut game1);
         }
         game1.white_to_play ^= true;
-        nb_nodes += perft(game1, depth - 1);
+        nb_nodes += perft(game1, depth - 1, legal_moves_tab);
     }
     nb_nodes
 }

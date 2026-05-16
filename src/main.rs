@@ -16,7 +16,7 @@ mod uci;
 mod zobrist;
 //mod zedzeda;
 //use perft::perft_divide;
-use crate::{chess::*, eval::eval};
+use crate::chess::*;
 use std::env;
 use uci::*;
 
@@ -34,11 +34,11 @@ fn main() {
     println!("{}", eval(&game, 30));*/
 
     if env::args().len() > 1 {
-        let mut depth = 64i8;
+        //let mut depth = 64i8;
         let mut game = Game::default();
         for (i, argument) in env::args().into_iter().enumerate() {
             match i {
-                1 => depth = argument.parse::<i8>().unwrap(),
+                //1 => depth = argument.parse::<i8>().unwrap(),
                 2 => {
                     let mut arr = vec!["", ""];
                     let mut fen: Vec<&str> = argument.trim().split_ascii_whitespace().collect();

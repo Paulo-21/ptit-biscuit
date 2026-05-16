@@ -725,7 +725,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             compute_move_b_hash((a, b, prom), &mut game1);
         }
         game1.white_to_play ^= true;
-        let (s, _b_move) = alpha_beta_neg_tt_best_time_fast(
+        let (_s, _b_move) = alpha_beta_neg_tt_best_time_fast(
             &mut game1,
             depth - 1,
             -beta,
@@ -903,10 +903,10 @@ pub fn mtd_f(
         //eprintln!("WINDOW");
         let beta = g + (g == lowerbound) as i32;
         //let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
-        let (mut x, i) =
+        let (x, i) =
             alpha_beta_neg_tt_best_time_fast(game, depth, beta - 1, beta, tool, nb_node, bmove);
         match x {
-            Some(mut s) => {
+            Some(s) => {
                 g = s;
                 bmove = i;
                 if g < beta {
