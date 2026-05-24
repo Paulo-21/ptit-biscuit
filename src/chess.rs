@@ -122,7 +122,7 @@ pub fn convert_square_to_move(a_move: u64) -> String {
     a.push((48 + b + 1) as char);
     a
 }
-pub static MVV_LVA1: [[u16; 6]; 6] = [
+pub static MVV_LVA: [[u16; 6]; 6] = [
     [105, 205, 305, 405, 505, 605],
     [104, 204, 304, 404, 504, 604],
     [103, 203, 303, 403, 503, 603],
@@ -131,7 +131,7 @@ pub static MVV_LVA1: [[u16; 6]; 6] = [
     [100, 200, 300, 400, 500, 600],
 ];
 
-pub static MVV_LVA: [[u16; 6]; 6] = [
+pub static MVV_LVA1: [[u16; 6]; 6] = [
     [500, 400, 300, 200, 100, 0],
     [501, 401, 301, 201, 101, 1],
     [502, 402, 302, 202, 102, 2],
@@ -1781,7 +1781,7 @@ pub fn get_legal_moves_fast_c(
                     + (piece & game.wq != 0) as u64 * 5
                     + (piece & game.wk != 0) as u64 * 6;
                 score_capture[c_i] = (
-                    get_score_move(1, victim as usize),
+                    get_score_move(6, victim as usize),
                     (bk_tzcnt << 9) + (b << 1),
                 );
                 //score[c_i] = get_score_move(6, victim as usize);

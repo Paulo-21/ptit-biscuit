@@ -4,7 +4,6 @@ use std::time::{Duration, Instant};
 use std::{io, sync::RwLock};
 
 use crate::chess::*;
-use crate::eval::eval;
 use crate::perft::*;
 use crate::search::*;
 use crate::search_tools::SearchTools;

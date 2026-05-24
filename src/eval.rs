@@ -8,19 +8,18 @@ pub fn eval(game: &Game, nmoves: i32) -> i32 {
             if is_attacked(game.white_to_play, game) {
                 return -999999 + (50 * game.nb_coups as i32);
             } else {
-                return 90999 - (50 * game.nb_coups as i32);
+                return 0; // - (50 * game.nb_coups as i32);
             }
         } else if is_attacked(game.white_to_play, game) {
             return 999999 - (50 * game.nb_coups as i32);
         } else {
-            return -90999 + (50 * game.nb_coups as i32);
+            return 0; // + (50 * game.nb_coups as i32);
         }
     }
     let mut score = 0;
     /*if game.nb_coups < 13 {
-        score += ((wpo & SQUARE_CENTER).popcnt() * 3 ) as i32;
-        score -= ((bpo & SQUARE_CENTER).popcnt()  * 3 )as i32;
-
+        score += ((wpo & SQUARE_CENTER).popcnt() * 3) as i32;
+        score -= ((bpo & SQUARE_CENTER).popcnt() * 3) as i32;
     }*/
     score += pesto_eval(game);
     //score += double_pawn(game);

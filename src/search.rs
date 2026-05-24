@@ -684,6 +684,10 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     if tool.timeover.load(Ordering::Relaxed) {
         return (None, 0);
     }
+    if depth == 0 {
+        return (Some(eval(game, 1)), 0);
+        //return quiescence(game, alpha, beta, tool, nb_node);
+    }
     *nb_node += 1;
     let alpha_orgi = alpha;
     let mut hash_move = 0u64;
@@ -699,7 +703,13 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                 }
             }
             if alpha >= beta {
-                return (Some(alpha), tt_entry.bestmove);
+                let bm = if tt_entry.node_type == NodeType::CUT {
+                    tt_entry.bestmove
+                } else {
+                    0
+                };
+                return (Some(alpha), bm);
+                //return (Some(alpha), tt_entry.bestmove);
             }
         }
         hash_move = tt_entry.bestmove;
@@ -709,7 +719,8 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     let (mut capture_scores, legal_moves, c_len, q_len) = get_legal_moves_fast_c(game);
 
     //if depth == 0 || (legal_moves.is_empty() && capture.is_empty()) {
-    if depth == 0 || (q_len == 0 && c_len == 0) {
+
+    if q_len == 0 && c_len == 0 {
         let eval = eval(game, (q_len + c_len) as i32);
 
         return (Some(eval), 0);
@@ -717,6 +728,12 @@ pub fn alpha_beta_neg_tt_best_time_fast(
 
     let mut value = i32::MIN >> 1;
     if hash_move != 0 {
+        let is_valid = capture_scores[..c_len].iter().any(|(_, m)| *m == hash_move)
+            || legal_moves[..q_len].iter().any(|m| *m == hash_move);
+
+        if !is_valid {
+            hash_move = 0;
+        }
         let (a, b, prom) = convert_custum_move2(hash_move);
         let mut game1 = *game;
         if game.white_to_play {
@@ -744,9 +761,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                 if alpha >= beta {
                     let node_t;
                     if value <= alpha_orgi {
-                        node_t = NodeType::CUT;
-                    } else if value >= beta {
                         node_t = NodeType::ALL;
+                    } else if value >= beta {
+                        node_t = NodeType::CUT;
                     } else {
                         node_t = NodeType::PV;
                     }
@@ -783,15 +800,16 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             None =>{ return (None, 0) }
         }
     }*/
-    let mut i = 0;
+    //let mut i = 0;
     //sort_move(&mut capture, score_moves);
     capture_scores.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-    for (_, moveto_play) in capture_scores {
+    for &(score, moveto_play) in capture_scores.iter().rev() {
         //let moveto_play = *moveto_play1;
-        if moveto_play == 0 {
+        if moveto_play == 0 || score == 0 || moveto_play == hash_move {
             break;
         }
-        if hash_move == moveto_play || first == moveto_play && i > 1 {
+        if hash_move == moveto_play {
+            //|| first == moveto_play {
             continue;
         }
         let (a, b, prom) = convert_custum_move2(moveto_play);
@@ -821,9 +839,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                 if alpha >= beta {
                     let node_t;
                     if value <= alpha_orgi {
-                        node_t = NodeType::CUT;
-                    } else if value >= beta {
                         node_t = NodeType::ALL;
+                    } else if value >= beta {
+                        node_t = NodeType::CUT;
                     } else {
                         node_t = NodeType::PV;
                     }
@@ -832,7 +850,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                     //}
                     return (Some(value), best_move);
                 }
-                i += 1;
+                //i += 1;
             }
             None => return (None, 0),
         }
@@ -875,13 +893,15 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     }
     let node_t;
     if value <= alpha_orgi {
-        node_t = NodeType::CUT;
-    } else if value >= beta {
         node_t = NodeType::ALL;
+        tool.tt.set(game.hash, depth, value, 0, node_t);
+    } else if value >= beta {
+        node_t = NodeType::CUT;
+        tool.tt.set(game.hash, depth, value, best_move, node_t);
     } else {
         node_t = NodeType::PV;
+        tool.tt.set(game.hash, depth, value, best_move, node_t);
     }
-    tool.tt.set(game.hash, depth, value, best_move, node_t);
     //eprintln!("{}", convert_custum_to_str(best_move));
     (Some(value), best_move)
 }
@@ -953,3 +973,56 @@ pub fn bns(node, α, β) {
     return bestNode
 }
 */
+fn quiescence(
+    game: &mut Game,
+    mut alpha: i32,
+    beta: i32,
+    tool: &mut SearchTools,
+    nb_node: &mut u64,
+) -> (Option<i32>, u64) {
+    *nb_node += 1;
+    let (capture_scores, _, c_len, q_len) = get_legal_moves_fast_c(game);
+
+    // Stand-pat : évaluation statique comme lower bound
+    let stand_pat = eval(game, (q_len + c_len) as i32);
+    if stand_pat >= beta {
+        return (Some(beta), 0);
+    }
+    alpha = max(alpha, stand_pat);
+
+    // Ne chercher que les captures (c_len premiers éléments)
+    let mut best_move = 0u64;
+    let mut captures = capture_scores;
+    captures.sort_unstable_by(|a, b| b.0.cmp(&a.0)); // tri décroissant pour quiescence
+
+    for (_, moveto_play) in captures {
+        if moveto_play == 0 {
+            break;
+        }
+
+        let (a, b, prom) = convert_custum_move2(moveto_play);
+        let mut game1 = *game;
+        if game.white_to_play {
+            compute_move_w_hash((a, b, prom), &mut game1);
+        } else {
+            compute_move_b_hash((a, b, prom), &mut game1);
+        }
+        game1.white_to_play ^= true;
+
+        let (s, _) = quiescence(&mut game1, -beta, -alpha, tool, nb_node);
+        match s {
+            Some(score) => {
+                let score = -score;
+                if score >= beta {
+                    return (Some(beta), moveto_play);
+                }
+                if score > alpha {
+                    alpha = score;
+                    best_move = moveto_play;
+                }
+            }
+            None => return (None, 0),
+        }
+    }
+    (Some(alpha), best_move)
+}
