@@ -685,7 +685,9 @@ pub fn alpha_beta_neg_tt_best_time_fast(
         return (None, 0);
     }
     if depth == 0 {
-        return (Some(eval(game, 1)), 0);
+        let mut game1 = *game;
+        game1.white_to_play ^= true;
+        return (Some(eval(&game1, 1)), 0);
         //return quiescence(game, alpha, beta, tool, nb_node);
     }
     *nb_node += 1;

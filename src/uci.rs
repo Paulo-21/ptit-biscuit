@@ -200,36 +200,36 @@ pub fn get_bitboard_from_fen(fen: Vec<&str>) -> Game {
     let board = fen[2];
     let toplay = fen[3];
     let castling_right = fen[4];
-    //let en_passant = fen[5];
-    //let nb_coup = fen[6];
-    let mut i: i32 = 63 - 7;
+    // let en_passant = fen[5];
+    // let nb_coup = fen[6];
+
+    let mut i: i32 = 56; // a8 = bit 56, coin haut-gauche du FEN
+
     for ligne in board.split('/') {
-        //Transform fen to board
-        //println!("ligne : {ligne}");
+        let mut col: i32 = 0;
         for c in ligne.chars() {
+            let sq = i + col;
             match c {
-                'p' => game.bp |= 1 << i,
-                'n' => game.bn |= 1 << i,
-                'b' => game.bb |= 1 << i,
-                'r' => game.br |= 1 << i,
-                'q' => game.bq |= 1 << i,
-                'k' => game.bk |= 1 << i,
-                'P' => game.wp |= 1 << i,
-                'N' => game.wn |= 1 << i,
-                'B' => game.wb |= 1 << i,
-                'R' => game.wr |= 1 << i,
-                'Q' => game.wq |= 1 << i,
-                'K' => game.wk |= 1 << i,
-                n => {
-                    if n.is_alphanumeric() {
-                        let k = n.to_digit(10).unwrap() as i32;
-                        i = i + k - 1;
-                    }
+                'p' => game.bp |= 1u64 << sq,
+                'n' => game.bn |= 1u64 << sq,
+                'b' => game.bb |= 1u64 << sq,
+                'r' => game.br |= 1u64 << sq,
+                'q' => game.bq |= 1u64 << sq,
+                'k' => game.bk |= 1u64 << sq,
+                'P' => game.wp |= 1u64 << sq,
+                'N' => game.wn |= 1u64 << sq,
+                'B' => game.wb |= 1u64 << sq,
+                'R' => game.wr |= 1u64 << sq,
+                'Q' => game.wq |= 1u64 << sq,
+                'K' => game.wk |= 1u64 << sq,
+                n if n.is_ascii_digit() => {
+                    col += n.to_digit(10).unwrap() as i32 - 1;
                 }
+                _ => {}
             }
-            i += 1;
+            col += 1;
         }
-        i -= 16;
+        i -= 8; // rangée suivante vers le bas
     }
 
     game.white_to_play = match toplay.chars().next().unwrap() {
@@ -247,7 +247,7 @@ pub fn get_bitboard_from_fen(fen: Vec<&str>) -> Game {
             _ => {}
         }
     }
-    //_draw_board(&game);
+
     game.hash = init_zobrist_key(&game);
     game
 }

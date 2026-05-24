@@ -4,16 +4,10 @@ use crate::chess::*;
 
 pub fn eval(game: &Game, nmoves: i32) -> i32 {
     if nmoves == 0 {
-        if game.white_to_play {
-            if is_attacked(game.white_to_play, game) {
-                return -999999 + (50 * game.nb_coups as i32);
-            } else {
-                return 0; // - (50 * game.nb_coups as i32);
-            }
-        } else if is_attacked(game.white_to_play, game) {
-            return 999999 - (50 * game.nb_coups as i32);
+        if is_attacked(game.white_to_play, game) {
+            return -999999 + (50 * game.nb_coups as i32);
         } else {
-            return 0; // + (50 * game.nb_coups as i32);
+            return 0; // - (50 * game.nb_coups as i32);
         }
     }
     let mut score = 0;
@@ -24,36 +18,10 @@ pub fn eval(game: &Game, nmoves: i32) -> i32 {
     score += pesto_eval(game);
     //score += double_pawn(game);
     //score += bishop_pair(game);
+    if !game.white_to_play {
+        score = -score;
+    }
     score
-}
-#[inline]
-fn double_pawn(game: &Game) -> i32 {
-    let mut s = 0;
-    s -= ((game.wp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s -= ((game.wp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s += ((game.bp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
-    s
-}
-#[inline(always)]
-fn bishop_pair(game: &Game) -> i32 {
-    let a = game.wb.popcnt() & 0b10;
-    let mut score = a | a << 2;
-    let a = game.bb.popcnt() & 0b10;
-    score -= a | a << 2;
-    score as i32
 }
 
 #[inline]
@@ -277,4 +245,33 @@ pub fn flip(x: u64) -> u64 {
     //x ^ 63
     x ^ 56
     //_flip_vertical(x)
+}
+#[inline]
+fn double_pawn(game: &Game) -> i32 {
+    let mut s = 0;
+    s -= ((game.wp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s -= ((game.wp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[0]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[1]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[2]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[3]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[4]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[5]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[6]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s += ((game.bp & FILE_MASKS[7]).popcnt() > 1) as i32 * DOUBLE_PAWN_PENALITY;
+    s
+}
+#[inline(always)]
+fn bishop_pair(game: &Game) -> i32 {
+    let a = game.wb.popcnt() & 0b10;
+    let mut score = a | a << 2;
+    let a = game.bb.popcnt() & 0b10;
+    score -= a | a << 2;
+    score as i32
 }
