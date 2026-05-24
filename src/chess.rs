@@ -258,9 +258,9 @@ lazy_static! {
 }
 
 struct Move {
+    score: u32,
     a: u8,
     b: u8,
-    score: u32,
 }
 
 #[allow(clippy::too_many_arguments)]

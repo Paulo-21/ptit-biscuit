@@ -4,8 +4,8 @@ static _TABLE_SIZE: usize = 8 << 21;
 
 pub struct TranspositionTable {
     pub table: Box<[Transposition]>,
-    pub stat_hint: i32,
     pub mask: usize,
+    pub stat_hint: i32,
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum NodeType {
@@ -16,10 +16,10 @@ pub enum NodeType {
 #[derive(Debug, Clone, Copy)]
 pub struct Transposition {
     pub hash: u64,
-    pub depth: u8,
-    pub eval: i32,
     pub bestmove: u64,
+    pub eval: i32,
     pub node_type: NodeType,
+    pub depth: u8,
 }
 impl Transposition {
     pub fn new(

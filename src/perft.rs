@@ -1,10 +1,15 @@
 use crate::chess::*;
 
 pub fn perft(mut game: Game, depth: u8, legal_moves_tab: &mut Vec<[u64; 70]>) -> usize {
+    if depth == 0 {
+        return 1;
+    }
     let mut nb_nodes = 0;
     let legal_moves: &mut [u64; 70];
+
     let len = unsafe {
         legal_moves = &mut *legal_moves_tab.get_unchecked_mut(depth as usize);
+        legal_moves.fill(0);
         get_legal_moves_fast(&mut game, legal_moves)
     };
 
@@ -14,9 +19,7 @@ pub fn perft(mut game: Game, depth: u8, legal_moves_tab: &mut Vec<[u64; 70]>) ->
             return len;
         }
     }
-    if depth == 0 {
-        return 1;
-    }
+
     for i in 0..70 {
         let moveto = unsafe {
             *legal_moves_tab
