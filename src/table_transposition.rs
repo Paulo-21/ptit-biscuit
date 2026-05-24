@@ -1,7 +1,5 @@
 use std::mem;
 
-static _TABLE_SIZE: usize = 8 << 21;
-
 pub struct TranspositionTable {
     pub table: Box<[Transposition]>,
     pub mask: usize,

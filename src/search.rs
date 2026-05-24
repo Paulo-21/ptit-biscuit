@@ -691,7 +691,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     let tt_entry = tool.tt.get(game.hash);
     if tt_entry.hash == game.hash {
         if tt_entry.depth >= depth {
-            /*match tt_entry.node_type {
+            match tt_entry.node_type {
                 NodeType::PV => return (Some(tt_entry.eval), tt_entry.bestmove),
                 NodeType::CUT => alpha = max(alpha, tt_entry.eval),
                 NodeType::ALL => {
@@ -700,7 +700,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             }
             if alpha >= beta {
                 return (Some(alpha), tt_entry.bestmove);
-            }*/
+            }
         }
         hash_move = tt_entry.bestmove;
     }
@@ -734,7 +734,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
             nb_node,
             0,
         );
-        /*match s {
+        match _s {
             Some(score) => {
                 if value < -score {
                     value = -score;
@@ -755,7 +755,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
                 }
             }
             None => return (None, 0),
-        }*/
+        }
     }
     /*if first != 0 {
         let (a,b, prom) = convert_custum_move2(first);
@@ -785,7 +785,7 @@ pub fn alpha_beta_neg_tt_best_time_fast(
     }*/
     let mut i = 0;
     //sort_move(&mut capture, score_moves);
-    capture_scores.sort_by(|a, b| a.0.cmp(&b.0));
+    capture_scores.sort_unstable_by(|a, b| a.0.cmp(&b.0));
     for (_, moveto_play) in capture_scores {
         //let moveto_play = *moveto_play1;
         if moveto_play == 0 {
@@ -901,7 +901,15 @@ pub fn mtd_f(
     let mut lowerbound = i32::MIN;
     loop {
         //eprintln!("WINDOW");
-        let beta = g + (g == lowerbound) as i32;
+        //let beta = g + (g == lowerbound) as i32;
+        // MTD BI
+        let beta = if g <= lowerbound {
+            g + 1
+        } else if g >= upperbound {
+            g
+        } else {
+            (lowerbound + upperbound) / 2
+        };
         //let (x,i)  = alpha_beta_neg_tt_best_time(game, depth, beta-1, beta, tool , nb_node, bmove);
         let (x, i) =
             alpha_beta_neg_tt_best_time_fast(game, depth, beta - 1, beta, tool, nb_node, bmove);
