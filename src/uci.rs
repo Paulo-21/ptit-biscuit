@@ -35,15 +35,15 @@ pub fn uci() {
             }
             "position" => {
                 game = input_position(command);
-                _draw_board(&game);
+                //_draw_board(&game);
                 /*let (cap, quiet, n, v) = get_legal_moves_fast_c(&mut game);
                 println!("PLAY W {}", game.white_to_play);
                 for c in cap {
                     println!("sc {}, piece : {}", c.0, c.1);
                     _draw_bitboard(c.1);
-                }*/
+                }
                 let vev = eval(&game, 30);
-                println!("{}", vev);
+                println!("{}", vev);*/
             }
             "go" => {
                 input_go(command, &game, &mut tt);
