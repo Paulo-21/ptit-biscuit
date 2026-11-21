@@ -2938,9 +2938,10 @@ pub fn possibility_b(game: &Game) -> u64 {
 
     attack |= attack_bp(game.bp, white);
 
-    if game.bn != 0 {
-        attack |= KNIGHT_MOVE[game.bn.tzcnt() as usize] & !black;
-        //attack |= possibility_n(game.bn) & !black;
+    let mut copy_bn = game.bn;
+    while copy_bn != 0 {
+        attack |= KNIGHT_MOVE[copy_bn.tzcnt() as usize] & !black;
+        copy_bn &= copy_bn - 1;
     }
     let mut copy_bb = game.bb;
     while copy_bb != 0 {

@@ -64,8 +64,9 @@ impl TranspositionTable {
             return;
         }*/
         // overwrite rules
-        //if entry.hash == 0 || (depth >= entry.depth) {}
-        *entry = Transposition::new(hash, depth, eval, bestmove, node_type);
+        if entry.hash == 0 || (depth >= entry.depth) {
+            *entry = Transposition::new(hash, depth, eval, bestmove, node_type);
+        }
     }
     pub fn _set_tt(&mut self, tt: Transposition) {
         let k = (tt.hash as usize) & self.mask;
