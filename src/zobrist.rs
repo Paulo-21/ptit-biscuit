@@ -85,25 +85,51 @@ impl Game {
         ]
     }
 }
-pub fn init_zobrist_key(
-    game: &Game, /*,piece_square : &mut [[u64;64]; 12], sidetomoveb: &mut u64, castling_right:&mut [u64;4],
-                 valid_enpassant : &mut [u64; 8],*/
-) -> u64 {
-    let mut zobrist_key = 0u64;
-    let mut i = 0;
-    for mut piece in game.as_array() {
+/// Partie du hash qui ne dépend pas des pièces : droits de roque, case
+/// en passant et trait (SIDETOMOVE présent ssi c'est aux noirs de jouer).
+#[inline(always)]
+fn state_key(game: &Game) -> u64 {
+    let mut key = 0u64;
+    for (i, right) in game.castling_as_array().into_iter().enumerate() {
+        if right {
+            key ^= CASTLING_RIGHT[i];
+        }
+    }
+    if game.en_passant != 0 {
+        key ^= VALID_ENPASSANT[(game.en_passant.tzcnt() & 7) as usize];
+    }
+    if !game.white_to_play {
+        key ^= *SIDETOMOVE;
+    }
+    key
+}
+
+pub fn init_zobrist_key(game: &Game) -> u64 {
+    let mut zobrist_key = state_key(game);
+    for (i, mut piece) in game.as_array().into_iter().enumerate() {
         while piece != 0 {
             zobrist_key ^= PIECE_SQUARE[i][piece.tzcnt() as usize];
             piece &= piece - 1;
         }
-        i += 1;
     }
-    i = 0;
-    for right in game.castling_as_array() {
-        if right {
-            zobrist_key ^= CASTLING_RIGHT[i];
+    zobrist_key
+}
+
+/// Différence de hash entre deux positions séparées par un coup.
+/// Le trait n'est pas encore inversé dans `after` (c'est l'appelant qui le
+/// fait), on l'inverse donc ici.
+#[inline(always)]
+pub fn zobrist_delta(before: &Game, after: &Game) -> u64 {
+    let mut delta = *SIDETOMOVE;
+    let (b, a) = (before.as_array(), after.as_array());
+    for i in 0..12 {
+        let mut diff = b[i] ^ a[i];
+        while diff != 0 {
+            delta ^= PIECE_SQUARE[i][diff.tzcnt() as usize];
+            diff &= diff - 1;
         }
     }
-    zobrist_key ^= *SIDETOMOVE;
-    zobrist_key
+    let mut a_state = *after;
+    a_state.white_to_play = before.white_to_play;
+    delta ^ state_key(before) ^ state_key(&a_state)
 }

@@ -12,6 +12,8 @@ mod perft;
 mod search;
 mod search_tools;
 mod table_transposition;
+#[cfg(test)]
+mod tests;
 mod uci;
 mod zobrist;
 //mod zedzeda;

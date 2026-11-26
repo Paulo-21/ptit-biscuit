@@ -130,8 +130,8 @@ fn input_go(command: Vec<&str>, game: &Game, tt: &mut TranspositionTable) {
                 } else {
                     move_time = btime / 25 + binc;
                 }
-            } else if wtime > 0 {
-                move_time = wtime / 25;
+            } else if btime > 0 {
+                move_time = btime / 25;
             }
             if game.nb_coups <= 6 && btime > 0 {
                 move_time = 4000;
@@ -189,7 +189,19 @@ fn input_position(commande: Vec<&str>) -> Game {
     if commande[1] == "startpos" {
         return get_bitboard_from_startpos(commande);
     } else if commande[1] == "fen" {
-        get_bitboard_from_fen(commande)
+        // "position fen <fen> moves e2e4 ..." : les coups étaient ignorés
+        let moves_pos = commande.iter().position(|&x| x == "moves");
+        let fen_part = commande[..moves_pos.unwrap_or(commande.len())].to_vec();
+        let mut game = get_bitboard_from_fen(fen_part);
+        if let Some(p) = moves_pos {
+            for one_move in &commande[p + 1..] {
+                let mv = convert_move_to_bitboard(one_move);
+                let w = game.white_to_play;
+                make_move(mv, &mut game, w);
+                game.white_to_play ^= true;
+            }
+        }
+        game
     } else {
         Game::default()
     }
@@ -199,8 +211,8 @@ pub fn get_bitboard_from_fen(fen: Vec<&str>) -> Game {
     let mut game = Game::empty();
     let board = fen[2];
     let toplay = fen[3];
-    let castling_right = fen[4];
-    // let en_passant = fen[5];
+    let castling_right = fen.get(4).copied().unwrap_or("-");
+    let en_passant = fen.get(5).copied().unwrap_or("-");
     // let nb_coup = fen[6];
 
     let mut i: i32 = 56; // a8 = bit 56, coin haut-gauche du FEN
@@ -237,6 +249,13 @@ pub fn get_bitboard_from_fen(fen: Vec<&str>) -> Game {
         'b' => false,
         _ => true,
     };
+
+    if en_passant.len() == 2 && en_passant != "-" {
+        game.en_passant = 1u64 << convert_move_str_to_bitboard(en_passant);
+    }
+    if let Some(n) = fen.get(7).and_then(|x| x.parse::<u16>().ok()) {
+        game.nb_coups = 2 * n.saturating_sub(1) + (!game.white_to_play) as u16;
+    }
 
     for right in castling_right.chars() {
         match right {
@@ -500,11 +519,18 @@ fn compute_mdt_f_iter(
             let (firstguess2, bmove2) =
                 mtd_f(&mut game1, firstguess, d, &mut tool, &mut nb_node, bmove);
             match firstguess2 {
-                Some(e) => {
+                Some(e) if bmove2 != 0 => {
                     bmove = bmove2;
                     firstguess = e;
+                    println!(
+                        "info depth {} score {} nodes {} pv {}",
+                        d,
+                        uci_score(e, game1.nb_coups),
+                        nb_node,
+                        convert_custum_to_str(bmove)
+                    );
                 }
-                None => {}
+                _ => {}
             }
             let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
             let out = convert_move_to_str(a, b, p);
@@ -532,11 +558,18 @@ fn compute_mdt_f_iter(
                 let (firstguess2, bmove2) =
                     mtd_f(&mut game1, firstguess, d, &mut tool, &mut nb_node, bmove);
                 match firstguess2 {
-                    Some(e) => {
+                    Some(e) if bmove2 != 0 => {
                         bmove = bmove2;
                         firstguess = e;
+                        println!(
+                            "info depth {} score {} nodes {} pv {}",
+                            d,
+                            uci_score(e, game1.nb_coups),
+                            nb_node,
+                            convert_custum_to_str(bmove)
+                        );
                     }
-                    None => {}
+                    _ => {}
                 }
                 let (a, b, p) = convert_custum_move((bmove, Piece::QUEEN));
                 let out = convert_move_to_str(a, b, p);
@@ -608,3 +641,14 @@ fn _compute_pvs_iter(game : &mut Game, depth : u8, tt : &mut TranspositionTable)
     let res = convert_custum_move((bmove, Piece::QUEEN));
     return res;
 }*/
+
+/// Score UCI : "cp x" ou "mate n" (les mats valent ±(999999 - 50 * ply_absolu)).
+fn uci_score(e: i32, root_ply: u16) -> String {
+    if e.abs() > 900_000 {
+        let plies = (999_999 - e.abs()) / 50 - root_ply as i32;
+        let moves = (plies + 1) / 2;
+        format!("mate {}", if e > 0 { moves } else { -moves })
+    } else {
+        format!("cp {e}")
+    }
+}

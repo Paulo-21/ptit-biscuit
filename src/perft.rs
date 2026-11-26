@@ -1,44 +1,45 @@
 use crate::chess::*;
 
-pub fn perft(mut game: Game, depth: u8, legal_moves_tab: &mut Vec<[u64; 70]>) -> usize {
+/// perft sur le générateur utilisé par la recherche (get_legal_moves_fast_c).
+/// Les promotions sont développées en dame/tour/fou/cavalier pour pouvoir
+/// comparer aux valeurs de référence.
+pub fn perft(game: Game, depth: u8, _legal_moves_tab: &mut Vec<[u64; 70]>) -> usize {
+    // un buffer par profondeur, alloué une seule fois
+    let mut bufs = vec![[0u64; MAX_MOVES_FAST]; depth as usize + 1];
+    perft_rec(game, depth, &mut bufs)
+}
+
+/// perft rapide sur get_legal_moves_fast (liste unique, sans tri des prises).
+/// Le générateur de la recherche (get_legal_moves_fast_c) est vérifié par
+/// `cargo test --release`.
+pub fn perft_rec(mut game: Game, depth: u8, bufs: &mut [[u64; MAX_MOVES_FAST]]) -> usize {
     if depth == 0 {
         return 1;
     }
-    let mut nb_nodes = 0;
-    let legal_moves: &mut [u64; 70];
-
-    let len = unsafe {
-        legal_moves = &mut *legal_moves_tab.get_unchecked_mut(depth as usize);
-        legal_moves.fill(0);
-        get_legal_moves_fast(&mut game, legal_moves)
-    };
-
-    //let legal_moves = get_legal_move(game.white_to_play,&game);
-    unsafe {
-        if depth == 1 || *legal_moves.get_unchecked(0) == 0 {
+    let (moves, rest) = bufs.split_last_mut().unwrap();
+    let len = get_legal_moves_fast(&mut game, moves);
+    if depth == 1 {
+        // comptage en bloc : chaque promotion compte pour 4 coups
+        let pawns_7th = if game.white_to_play { game.wp & RANK_MASK[6] } else { game.bp & RANK_MASK[1] };
+        if pawns_7th == 0 {
             return len;
         }
+        let promos = moves[..len].iter().filter(|&&m| m & 1 == 1).count();
+        return len + 3 * promos;
     }
-
-    for i in 0..70 {
-        let moveto = unsafe {
-            *legal_moves_tab
-                .get_unchecked(depth as usize)
-                .get_unchecked(i)
+    let mut nb_nodes = 0;
+    for &m in &moves[..len] {
+        let (a, b, p) = convert_custum_move2(m);
+        let proms: &[Piece] = match p {
+            Piece::QUEEN => &[Piece::QUEEN, Piece::ROOK, Piece::BISHOP, Piece::KNIGHT],
+            _ => &[Piece::NONE],
         };
-        if moveto == 0 {
-            break;
+        for &pr in proms {
+            let mut game1 = game;
+            make_move_nohash((a, b, pr), &mut game1, game.white_to_play);
+            game1.white_to_play ^= true;
+            nb_nodes += perft_rec(game1, depth - 1, rest);
         }
-        //let moves = convert_custum_move(moveto);
-        let mut game1 = game;
-        let moves = convert_custum_move2(moveto);
-        if game.white_to_play {
-            compute_move_w_thrust(moves, &mut game1);
-        } else {
-            compute_move_b_thrust(moves, &mut game1);
-        }
-        game1.white_to_play ^= true;
-        nb_nodes += perft(game1, depth - 1, legal_moves_tab);
     }
     nb_nodes
 }

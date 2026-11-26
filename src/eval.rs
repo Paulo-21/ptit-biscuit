@@ -21,8 +21,11 @@ pub fn eval(game: &Game, nmoves: i32) -> i32 {
     if !game.white_to_play {
         score = -score;
     }
-    score
+    // bonus de trait : atténue l'effet pair/impair entre itérations
+    score + TEMPO
 }
+
+const TEMPO: i32 = 15;
 
 #[inline]
 fn pesto_eval(game: &Game) -> i32 {
